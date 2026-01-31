@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, getMonthExpenses, getMonthExpenseCount, addExpense, deleteExpense, updateSettings, getStreakInfo } from '../db';
+import { db, getMonthExpenses, getMonthExpenseCount, addExpense, deleteExpense, updateSettings, getStreakInfo, getAllExpenses, clearAllData } from '../db';
 
 export function useExpenses() {
   const [loading, setLoading] = useState(true);
@@ -44,6 +44,8 @@ export function useExpenses() {
       return { success: true };
     },
     deleteExpense,
-    updateSettings
+    updateSettings,
+    getAllExpenses,
+    clearAllData
   };
 }

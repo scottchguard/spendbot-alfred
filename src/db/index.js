@@ -142,3 +142,19 @@ export async function getStreakInfo() {
   
   return { currentStreak, longestStreak, trackedToday };
 }
+
+// Get all expenses (for export)
+export async function getAllExpenses() {
+  return db.expenses.orderBy('date').reverse().toArray();
+}
+
+// Clear all data
+export async function clearAllData() {
+  await db.expenses.clear();
+  // Reset settings but keep the structure
+  await db.settings.update('settings', {
+    monthlyBudget: null,
+    onboardingComplete: true, // Don't show onboarding again
+    updatedAt: new Date()
+  });
+}

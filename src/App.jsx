@@ -25,7 +25,9 @@ function App() {
     addExpense,
     deleteExpense,
     updateSettings,
-    streakInfo
+    streakInfo,
+    getAllExpenses,
+    clearAllData
   } = useExpenses();
 
   useEffect(() => {
@@ -86,7 +88,10 @@ function App() {
           <Settings
             key="settings"
             settings={settings}
+            categories={categories}
             onUpdate={updateSettings}
+            onExport={getAllExpenses}
+            onClearAll={clearAllData}
             onBack={() => setView('dashboard')}
           />
         )}

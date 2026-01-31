@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { formatCurrency } from '../utils/format';
 
 function SettingRow({ label, description, children }) {
@@ -32,9 +32,54 @@ function Toggle({ checked, onChange }) {
   );
 }
 
-export function Settings({ settings, onUpdate, onBack }) {
+function ConfirmModal({ show, title, message, confirmText, onConfirm, onCancel, danger }) {
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6"
+          onClick={onCancel}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            onClick={e => e.stopPropagation()}
+            className="bg-surface-raised rounded-2xl p-6 max-w-sm w-full"
+          >
+            <h3 className="text-lg font-semibold text-text-primary mb-2">{title}</h3>
+            <p className="text-text-secondary text-sm mb-6">{message}</p>
+            <div className="flex gap-3">
+              <button
+                onClick={onCancel}
+                className="flex-1 py-3 bg-background rounded-xl text-text-secondary font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={onConfirm}
+                className={`flex-1 py-3 rounded-xl font-medium ${
+                  danger ? 'bg-danger text-white' : 'bg-accent text-white'
+                }`}
+              >
+                {confirmText}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+export function Settings({ settings, categories, onUpdate, onExport, onClearAll, onBack }) {
   const [budget, setBudget] = useState(settings?.monthlyBudget || '');
   const [showBudgetInput, setShowBudgetInput] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const handleBudgetSave = () => {
     const value = parseFloat(budget);
@@ -44,6 +89,45 @@ export function Settings({ settings, onUpdate, onBack }) {
       onUpdate({ monthlyBudget: null });
     }
     setShowBudgetInput(false);
+  };
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const expenses = await onExport();
+      
+      // Build CSV
+      const headers = ['Date', 'Category', 'Amount', 'Note'];
+      const rows = expenses.map(e => {
+        const cat = categories?.find(c => c.id === e.categoryId);
+        return [
+          new Date(e.date).toISOString(),
+          cat?.name || 'Other',
+          (e.amount / 100).toFixed(2),
+          e.note || ''
+        ];
+      });
+      
+      const csv = [headers, ...rows]
+        .map(row => row.map(cell => `"${cell}"`).join(','))
+        .join('\n');
+      
+      // Download
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `spendbot-export-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleClearAll = async () => {
+    await onClearAll();
+    setShowClearConfirm(false);
   };
 
   return (
@@ -135,15 +219,22 @@ export function Settings({ settings, onUpdate, onBack }) {
               label="Export Data"
               description="Download all expenses as CSV"
             >
-              <button className="text-accent font-medium">
-                Export
+              <button 
+                onClick={handleExport}
+                disabled={exporting}
+                className="text-accent font-medium disabled:opacity-50"
+              >
+                {exporting ? 'Exporting...' : 'Export'}
               </button>
             </SettingRow>
             <SettingRow
               label="Clear All Data"
               description="Delete all expenses (cannot be undone)"
             >
-              <button className="text-danger font-medium">
+              <button 
+                onClick={() => setShowClearConfirm(true)}
+                className="text-danger font-medium"
+              >
                 Clear
               </button>
             </SettingRow>
@@ -157,6 +248,17 @@ export function Settings({ settings, onUpdate, onBack }) {
           <div className="text-xs mt-1">Built by Loopspur</div>
         </div>
       </div>
+
+      {/* Clear Confirmation Modal */}
+      <ConfirmModal
+        show={showClearConfirm}
+        title="Clear All Data?"
+        message="This will permanently delete all your expenses. This action cannot be undone."
+        confirmText="Delete Everything"
+        danger={true}
+        onConfirm={handleClearAll}
+        onCancel={() => setShowClearConfirm(false)}
+      />
     </motion.div>
   );
 }
