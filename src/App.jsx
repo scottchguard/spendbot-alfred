@@ -5,12 +5,14 @@ import { AddExpense } from './components/AddExpense';
 import { History } from './components/History';
 import { Settings } from './components/Settings';
 import { Onboarding } from './components/Onboarding';
+import { Paywall } from './components/Paywall';
 import { useExpenses } from './hooks/useExpenses';
 import { initializeDB } from './db';
 
 function App() {
   const [view, setView] = useState('dashboard'); // dashboard | history | settings
   const [showAdd, setShowAdd] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
   const [initialized, setInitialized] = useState(false);
   
   const {
@@ -51,8 +53,23 @@ function App() {
     return <Onboarding onComplete={handleOnboardingComplete} />;
   }
 
+  const handleAddClick = () => {
+    if (!canAddExpense) {
+      setShowPaywall(true);
+    } else {
+      setShowAdd(true);
+    }
+  };
+
   const handleSave = async (amount, categoryId) => {
     return addExpense(amount, categoryId);
+  };
+
+  const handleUpgrade = () => {
+    // In a real app, this would open Stripe/IAP
+    // For now, just toggle premium for testing
+    updateSettings({ isPremium: true });
+    setShowPaywall(false);
   };
 
   return (
@@ -68,7 +85,7 @@ function App() {
             settings={settings}
             monthCount={monthCount}
             streakInfo={streakInfo}
-            onAddClick={() => setShowAdd(true)}
+            onAddClick={handleAddClick}
             onHistoryClick={() => setView('history')}
             onSettingsClick={() => setView('settings')}
           />
@@ -104,6 +121,16 @@ function App() {
             canAdd={canAddExpense}
             onSave={handleSave}
             onClose={() => setShowAdd(false)}
+          />
+        )}
+      </AnimatePresence>
+      
+      <AnimatePresence>
+        {showPaywall && (
+          <Paywall
+            monthCount={monthCount}
+            onUpgrade={handleUpgrade}
+            onClose={() => setShowPaywall(false)}
           />
         )}
       </AnimatePresence>
