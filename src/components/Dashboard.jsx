@@ -88,7 +88,9 @@ export function Dashboard({
   categoryTotals,
   settings,
   monthCount,
-  onAddClick 
+  onAddClick,
+  onHistoryClick,
+  onSettingsClick
 }) {
   const maxCategoryAmount = Math.max(...Object.values(categoryTotals), 1);
   const recentExpenses = expenses.slice(0, 5);
@@ -110,7 +112,7 @@ export function Dashboard({
           <h1 className="text-xl font-heading font-semibold text-text-primary">
             {getCurrentMonthName()}
           </h1>
-          <button className="text-text-secondary text-2xl">⚙️</button>
+          <button onClick={onSettingsClick} className="text-text-secondary text-2xl hover:opacity-80 transition-opacity">⚙️</button>
         </div>
 
         {/* Monthly Total */}
@@ -173,9 +175,19 @@ export function Dashboard({
 
       {/* Recent Transactions */}
       <div className="px-6">
-        <h2 className="text-sm font-semibold text-text-secondary mb-3">
-          Recent
-        </h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-text-secondary">
+            Recent
+          </h2>
+          {expenses.length > 0 && (
+            <button 
+              onClick={onHistoryClick}
+              className="text-sm text-accent hover:opacity-80 transition-opacity"
+            >
+              See All →
+            </button>
+          )}
+        </div>
         {recentExpenses.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-5xl mb-4">🤖</div>

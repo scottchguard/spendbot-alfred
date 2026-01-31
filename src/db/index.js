@@ -82,3 +82,11 @@ export async function addExpense(amount, categoryId, note = '') {
 export async function deleteExpense(id) {
   return db.expenses.delete(id);
 }
+
+// Update settings
+export async function updateSettings(updates) {
+  return db.settings.update('settings', {
+    ...updates,
+    updatedAt: new Date()
+  });
+}
