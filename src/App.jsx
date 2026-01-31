@@ -4,6 +4,7 @@ import { Dashboard } from './components/Dashboard';
 import { AddExpense } from './components/AddExpense';
 import { History } from './components/History';
 import { Settings } from './components/Settings';
+import { Onboarding } from './components/Onboarding';
 import { useExpenses } from './hooks/useExpenses';
 import { initializeDB } from './db';
 
@@ -31,12 +32,21 @@ function App() {
     initializeDB().then(() => setInitialized(true));
   }, []);
 
+  const handleOnboardingComplete = async () => {
+    await updateSettings({ onboardingComplete: true });
+  };
+
   if (!initialized || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-4xl animate-pulse">🤖</div>
       </div>
     );
+  }
+
+  // Show onboarding for new users
+  if (!settings?.onboardingComplete) {
+    return <Onboarding onComplete={handleOnboardingComplete} />;
   }
 
   const handleSave = async (amount, categoryId) => {
