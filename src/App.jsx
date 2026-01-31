@@ -23,7 +23,8 @@ function App() {
     canAddExpense,
     addExpense,
     deleteExpense,
-    updateSettings
+    updateSettings,
+    streakInfo
   } = useExpenses();
 
   useEffect(() => {
@@ -54,6 +55,7 @@ function App() {
             categoryTotals={categoryTotals}
             settings={settings}
             monthCount={monthCount}
+            streakInfo={streakInfo}
             onAddClick={() => setShowAdd(true)}
             onHistoryClick={() => setView('history')}
             onSettingsClick={() => setView('settings')}

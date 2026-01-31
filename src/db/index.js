@@ -90,3 +90,55 @@ export async function updateSettings(updates) {
     updatedAt: new Date()
   });
 }
+
+// Get streak info (consecutive days with at least one expense)
+export async function getStreakInfo() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  // Get all expenses, grouped by day
+  const expenses = await db.expenses.orderBy('date').reverse().toArray();
+  
+  if (expenses.length === 0) {
+    return { currentStreak: 0, longestStreak: 0, trackedToday: false };
+  }
+  
+  // Check if tracked today
+  const latestDate = new Date(expenses[0].date);
+  latestDate.setHours(0, 0, 0, 0);
+  const trackedToday = latestDate.getTime() === today.getTime();
+  
+  // Calculate current streak
+  let currentStreak = 0;
+  let checkDate = trackedToday ? today : new Date(today.getTime() - 86400000);
+  
+  // Get unique days with expenses
+  const daysWithExpenses = new Set();
+  expenses.forEach(e => {
+    const d = new Date(e.date);
+    d.setHours(0, 0, 0, 0);
+    daysWithExpenses.add(d.getTime());
+  });
+  
+  while (daysWithExpenses.has(checkDate.getTime())) {
+    currentStreak++;
+    checkDate = new Date(checkDate.getTime() - 86400000);
+  }
+  
+  // Calculate longest streak
+  const sortedDays = Array.from(daysWithExpenses).sort((a, b) => a - b);
+  let longestStreak = 1;
+  let tempStreak = 1;
+  
+  for (let i = 1; i < sortedDays.length; i++) {
+    const diff = sortedDays[i] - sortedDays[i - 1];
+    if (diff === 86400000) { // exactly 1 day
+      tempStreak++;
+      longestStreak = Math.max(longestStreak, tempStreak);
+    } else {
+      tempStreak = 1;
+    }
+  }
+  
+  return { currentStreak, longestStreak, trackedToday };
+}

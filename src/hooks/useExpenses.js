@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, getMonthExpenses, getMonthExpenseCount, addExpense, deleteExpense, updateSettings } from '../db';
+import { db, getMonthExpenses, getMonthExpenseCount, addExpense, deleteExpense, updateSettings, getStreakInfo } from '../db';
 
 export function useExpenses() {
   const [loading, setLoading] = useState(true);
@@ -9,6 +9,7 @@ export function useExpenses() {
   const categories = useLiveQuery(() => db.categories.orderBy('sortOrder').toArray(), []);
   const settings = useLiveQuery(() => db.settings.get('settings'), []);
   const monthCount = useLiveQuery(() => getMonthExpenseCount(), []);
+  const streakInfo = useLiveQuery(() => getStreakInfo(), []);
 
   useEffect(() => {
     if (expenses !== undefined && categories !== undefined && settings !== undefined) {
@@ -34,6 +35,7 @@ export function useExpenses() {
     monthCount: monthCount || 0,
     categoryTotals,
     canAddExpense,
+    streakInfo: streakInfo || { currentStreak: 0, longestStreak: 0, trackedToday: false },
     addExpense: async (amount, categoryId, note) => {
       if (!canAddExpense && !settings?.isPremium) {
         return { success: false, reason: 'limit' };

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NumberPad } from './NumberPad';
 import { CategorySelector } from './CategorySelector';
+import { Confetti, SuccessCheck } from './Confetti';
 import { formatCurrency } from '../utils/format';
 
 export function AddExpense({ categories, onSave, onClose, canAdd }) {
@@ -51,6 +52,9 @@ export function AddExpense({ categories, onSave, onClose, canAdd }) {
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-background z-50 flex flex-col"
     >
+      {/* Confetti celebration */}
+      <Confetti show={success} emoji={category?.emoji} />
+      
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4">
         <button onClick={onClose} className="text-text-secondary text-lg">
@@ -66,11 +70,10 @@ export function AddExpense({ categories, onSave, onClose, canAdd }) {
           {success ? (
             <motion.div
               key="success"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="text-6xl"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
             >
-              ✓
+              <SuccessCheck category={category} />
             </motion.div>
           ) : (
             <motion.div

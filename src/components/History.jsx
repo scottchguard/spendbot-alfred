@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion';
 import { formatCurrency, formatTime, groupExpensesByDate } from '../utils/format';
+import { Toast } from './Toast';
 
 function SwipeableExpense({ expense, category, onDelete }) {
   const x = useMotionValue(0);
@@ -57,7 +58,45 @@ function SwipeableExpense({ expense, category, onDelete }) {
 }
 
 export function History({ expenses, categories, onDelete, onBack }) {
-  const grouped = groupExpensesByDate(expenses);
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const deleteTimerRef = useRef(null);
+  
+  // Filter out pending delete from display
+  const visibleExpenses = pendingDelete 
+    ? expenses.filter(e => e.id !== pendingDelete.id)
+    : expenses;
+  const grouped = groupExpensesByDate(visibleExpenses);
+  
+  const handleDelete = (expenseId) => {
+    const expense = expenses.find(e => e.id === expenseId);
+    if (!expense) return;
+    
+    // Store for potential undo
+    setPendingDelete(expense);
+    
+    // Set timer to actually delete
+    deleteTimerRef.current = setTimeout(() => {
+      onDelete(expenseId);
+      setPendingDelete(null);
+    }, 4000);
+  };
+  
+  const handleUndo = () => {
+    // Cancel the delete
+    if (deleteTimerRef.current) {
+      clearTimeout(deleteTimerRef.current);
+    }
+    setPendingDelete(null);
+  };
+  
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (deleteTimerRef.current) {
+        clearTimeout(deleteTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -107,7 +146,7 @@ export function History({ expenses, categories, onDelete, onBack }) {
                     key={expense.id}
                     expense={expense}
                     category={categories.find(c => c.id === expense.categoryId)}
-                    onDelete={onDelete}
+                    onDelete={handleDelete}
                   />
                 ))}
               </motion.div>
@@ -115,6 +154,14 @@ export function History({ expenses, categories, onDelete, onBack }) {
           </AnimatePresence>
         )}
       </div>
+      
+      {/* Undo Toast */}
+      <Toast
+        show={!!pendingDelete}
+        message="Expense deleted"
+        action="Undo"
+        onAction={handleUndo}
+      />
     </div>
   );
 }

@@ -81,6 +81,29 @@ function ExpenseItem({ expense, category }) {
   );
 }
 
+function StreakBadge({ streak, trackedToday }) {
+  if (streak === 0) return null;
+  
+  return (
+    <motion.div
+      initial={{ scale: 0 }}
+      animate={{ scale: 1 }}
+      className="flex items-center gap-1.5 bg-gradient-to-r from-orange-500/20 to-red-500/20 
+                 px-3 py-1.5 rounded-full border border-orange-500/30"
+    >
+      <span className="text-lg">🔥</span>
+      <span className="text-sm font-semibold text-orange-400">
+        {streak} day{streak !== 1 ? 's' : ''}
+      </span>
+      {!trackedToday && (
+        <span className="text-xs text-orange-400/70 ml-1">
+          Track today!
+        </span>
+      )}
+    </motion.div>
+  );
+}
+
 export function Dashboard({ 
   monthTotal, 
   expenses, 
@@ -88,6 +111,7 @@ export function Dashboard({
   categoryTotals,
   settings,
   monthCount,
+  streakInfo,
   onAddClick,
   onHistoryClick,
   onSettingsClick
@@ -122,6 +146,14 @@ export function Dashboard({
             className="font-display text-5xl md:text-6xl font-bold text-text-primary"
           />
           <p className="text-text-secondary mt-2">This Month</p>
+          
+          {/* Streak Badge */}
+          <div className="mt-4 flex justify-center">
+            <StreakBadge 
+              streak={streakInfo?.currentStreak || 0} 
+              trackedToday={streakInfo?.trackedToday} 
+            />
+          </div>
         </div>
 
         {/* Budget Progress */}
