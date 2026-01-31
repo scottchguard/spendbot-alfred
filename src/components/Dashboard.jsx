@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { formatCurrency, formatTime, getCurrentMonthName } from '../utils/format';
+import { Insights } from './Insights';
 
 function AnimatedNumber({ value, className }) {
   const [displayValue, setDisplayValue] = useState(0);
@@ -182,6 +183,14 @@ export function Dashboard({
             {monthCount}/50 expenses this month
           </div>
         )}
+        
+        {/* Smart Insights */}
+        <Insights
+          expenses={expenses}
+          categories={categories}
+          monthTotal={monthTotal}
+          streakInfo={streakInfo}
+        />
       </div>
 
       {/* Category Breakdown */}
