@@ -5,8 +5,9 @@ import { CategorySelector } from './CategorySelector';
 import { Confetti, SuccessCheck } from './Confetti';
 import { formatCurrency } from '../utils/format';
 import { RobotBuddy, getRandomMessage } from './RobotBuddy';
+import { QuickAdd } from './QuickAdd';
 
-export function AddExpense({ categories, onSave, onClose, canAdd }) {
+export function AddExpense({ categories, onSave, onClose, canAdd, expenses = [] }) {
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -136,6 +137,32 @@ export function AddExpense({ categories, onSave, onClose, canAdd }) {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Quick Add Suggestions */}
+      {!success && expenses.length >= 3 && !amount && (
+        <div className="px-4 pb-2">
+          <QuickAdd
+            expenses={expenses}
+            categories={categories}
+            onQuickAdd={async ({ amount, categoryId }) => {
+              // Quick add bypasses manual entry
+              setSaving(true);
+              const result = await onSave(amount, categoryId);
+              if (result.success) {
+                const cat = categories.find(c => c.id === categoryId);
+                setCategory(cat);
+                const reaction = getRobotReaction(amount / 100);
+                setRobotMood(reaction.mood);
+                setRobotReaction(getRandomMessage(reaction.type));
+                setSuccess(true);
+                setTimeout(() => onClose(), 1500);
+              } else {
+                setSaving(false);
+              }
+            }}
+          />
+        </div>
+      )}
 
       {/* Category Selector */}
       {!success && (

@@ -181,6 +181,7 @@ function AppContent() {
           <AddExpense
             categories={DEFAULT_CATEGORIES}
             canAdd={canAddExpense}
+            expenses={expenses}
             onSave={handleSave}
             onClose={() => setShowAdd(false)}
           />
