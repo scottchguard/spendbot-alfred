@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { formatCurrency, formatTime, getCurrentMonthName } from '../utils/format';
-import { Insights } from './Insights';
+import { SmartInsights } from './SmartInsights';
+import { WeeklyChart, CategoryBreakdown, SpendingPace } from './SpendingChart';
+import { WelcomeCard } from './WelcomeCard';
 
 function AnimatedNumber({ value, className }) {
   const [displayValue, setDisplayValue] = useState(0);
@@ -26,35 +28,6 @@ function AnimatedNumber({ value, className }) {
   }, [value]);
 
   return <span className={className}>{formatCurrency(displayValue)}</span>;
-}
-
-function CategoryBar({ category, amount, maxAmount }) {
-  const percentage = maxAmount > 0 ? (amount / maxAmount) * 100 : 0;
-  
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      className="flex-shrink-0 w-28 p-3 bg-surface-raised rounded-2xl"
-    >
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-xl">{category.emoji}</span>
-        <span className="text-xs text-text-secondary truncate">{category.name}</span>
-      </div>
-      <div className="text-sm font-semibold text-text-primary mb-2">
-        {formatCurrency(amount)}
-      </div>
-      <div className="h-1 bg-border rounded-full overflow-hidden">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${percentage}%` }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-          className="h-full rounded-full"
-          style={{ backgroundColor: category.color }}
-        />
-      </div>
-    </motion.div>
-  );
 }
 
 function ExpenseItem({ expense, category }) {
@@ -115,19 +88,27 @@ export function Dashboard({
   streakInfo,
   onAddClick,
   onHistoryClick,
-  onSettingsClick
+  onSettingsClick,
+  userName
 }) {
-  const maxCategoryAmount = Math.max(...Object.values(categoryTotals), 1);
   const recentExpenses = expenses.slice(0, 5);
   
   const budgetPercentage = settings?.monthlyBudget 
     ? Math.min((monthTotal / settings.monthlyBudget) * 100, 100)
     : null;
 
-  const categoriesWithTotals = categories
-    .map(cat => ({ ...cat, total: categoryTotals[cat.id] || 0 }))
-    .filter(cat => cat.total > 0)
-    .sort((a, b) => b.total - a.total);
+  // Calculate date info for insights
+  const now = new Date();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const currentDay = now.getDate();
+
+  // Check if today has expenses
+  const todayStr = now.toISOString().slice(0, 10);
+  const todayExpenses = expenses.filter(e => e.date?.startsWith(todayStr));
+  const trackedToday = todayExpenses.length > 0;
+
+  // Show welcome card for new users (< 10 expenses)
+  const showWelcome = monthCount < 10;
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -137,7 +118,12 @@ export function Dashboard({
           <h1 className="text-xl font-heading font-semibold text-text-primary">
             {getCurrentMonthName()}
           </h1>
-          <button onClick={onSettingsClick} className="text-text-secondary text-2xl hover:opacity-80 transition-opacity">⚙️</button>
+          <button 
+            onClick={onSettingsClick} 
+            className="text-text-secondary text-2xl hover:opacity-80 transition-opacity"
+          >
+            ⚙️
+          </button>
         </div>
 
         {/* Monthly Total */}
@@ -151,8 +137,8 @@ export function Dashboard({
           {/* Streak Badge */}
           <div className="mt-4 flex justify-center">
             <StreakBadge 
-              streak={streakInfo?.currentStreak || 0} 
-              trackedToday={streakInfo?.trackedToday} 
+              streak={streakInfo?.current || 0} 
+              trackedToday={trackedToday} 
             />
           </div>
         </div>
@@ -177,47 +163,63 @@ export function Dashboard({
           </div>
         )}
 
+        {/* Spending Pace (when budget is set) */}
+        {settings?.monthlyBudget && monthCount >= 5 && (
+          <SpendingPace
+            monthTotal={monthTotal}
+            monthlyBudget={settings.monthlyBudget}
+            daysInMonth={daysInMonth}
+            currentDay={currentDay}
+          />
+        )}
+
         {/* Free tier counter */}
         {!settings?.isPremium && (
           <div className="text-center text-sm text-text-muted mb-4">
             {monthCount}/50 expenses this month
           </div>
         )}
+
+        {/* Welcome Card for new users */}
+        {showWelcome && (
+          <WelcomeCard
+            userName={userName}
+            expenseCount={monthCount}
+            onAddClick={onAddClick}
+          />
+        )}
         
         {/* Smart Insights */}
-        <Insights
-          expenses={expenses}
-          categories={categories}
-          monthTotal={monthTotal}
-          streakInfo={streakInfo}
-        />
+        {!showWelcome && (
+          <SmartInsights
+            expenses={expenses}
+            monthlyBudget={settings?.monthlyBudget}
+            isPremium={settings?.isPremium}
+          />
+        )}
       </div>
 
+      {/* Weekly Chart (show when enough data) */}
+      {monthCount >= 3 && (
+        <div className="px-6">
+          <WeeklyChart expenses={expenses} />
+        </div>
+      )}
+
       {/* Category Breakdown */}
-      {categoriesWithTotals.length > 0 && (
-        <div className="mb-6">
-          <h2 className="px-6 text-sm font-semibold text-text-secondary mb-3">
-            Spending by Category
-          </h2>
-          <div className="overflow-x-auto scrollbar-hide">
-            <div className="flex gap-3 px-6">
-              {categoriesWithTotals.map((cat, i) => (
-                <CategoryBar
-                  key={cat.id}
-                  category={cat}
-                  amount={cat.total}
-                  maxAmount={maxCategoryAmount}
-                />
-              ))}
-            </div>
-          </div>
+      {categoryTotals && categoryTotals.length > 0 && (
+        <div className="px-6">
+          <CategoryBreakdown 
+            categoryTotals={categoryTotals}
+            monthTotal={monthTotal}
+          />
         </div>
       )}
 
       {/* Recent Transactions */}
       <div className="px-6">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-text-secondary">
+          <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider">
             Recent
           </h2>
           {expenses.length > 0 && (
@@ -229,7 +231,8 @@ export function Dashboard({
             </button>
           )}
         </div>
-        {recentExpenses.length === 0 ? (
+        
+        {recentExpenses.length === 0 && !showWelcome ? (
           <div className="text-center py-12">
             <div className="text-5xl mb-4">🤖</div>
             <p className="text-text-secondary">No expenses yet!</p>
@@ -237,17 +240,17 @@ export function Dashboard({
               Tap the + button to track your first purchase.
             </p>
           </div>
-        ) : (
+        ) : recentExpenses.length > 0 ? (
           <div className="space-y-2">
-            {recentExpenses.map((expense, i) => (
+            {recentExpenses.map((expense) => (
               <ExpenseItem
                 key={expense.id}
                 expense={expense}
-                category={categories.find(c => c.id === expense.categoryId)}
+                category={categories.find(c => c.id === expense.category_id)}
               />
             ))}
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* FAB */}
