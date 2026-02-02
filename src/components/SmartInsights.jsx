@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { useMemo } from 'react';
+import { getLocalDateString, getLocalMonthString, getCurrentDayOfMonth, getDaysInCurrentMonth, getDaysRemainingInMonth } from '../utils/dateUtils';
 
 /**
  * SmartInsights - Generates personalized, actionable insights based on spending patterns
@@ -8,25 +9,25 @@ export function SmartInsights({ expenses, monthlyBudget, isPremium }) {
   const insights = useMemo(() => {
     if (!expenses || expenses.length === 0) return [];
 
-    const now = new Date();
-    const currentMonth = now.toISOString().slice(0, 7);
-    const currentDay = now.getDate();
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const daysRemaining = daysInMonth - currentDay;
+    const currentMonth = getLocalMonthString();
+    const currentDay = getCurrentDayOfMonth();
+    const daysInMonth = getDaysInCurrentMonth();
+    const daysRemaining = getDaysRemainingInMonth();
 
     // This month's expenses
-    const monthExpenses = expenses.filter(e => e.date.startsWith(currentMonth));
+    const monthExpenses = expenses.filter(e => e.date?.startsWith(currentMonth));
     const monthTotal = monthExpenses.reduce((sum, e) => sum + e.amount, 0);
 
     // Last month's expenses for comparison
+    const now = new Date();
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const lastMonthStr = lastMonth.toISOString().slice(0, 7);
-    const lastMonthExpenses = expenses.filter(e => e.date.startsWith(lastMonthStr));
+    const lastMonthStr = getLocalMonthString(lastMonth);
+    const lastMonthExpenses = expenses.filter(e => e.date?.startsWith(lastMonthStr));
     const lastMonthTotal = lastMonthExpenses.reduce((sum, e) => sum + e.amount, 0);
 
     // Today's expenses
-    const todayStr = now.toISOString().slice(0, 10);
-    const todayExpenses = expenses.filter(e => e.date.startsWith(todayStr));
+    const todayStr = getLocalDateString();
+    const todayExpenses = expenses.filter(e => e.date?.startsWith(todayStr));
     const todayTotal = todayExpenses.reduce((sum, e) => sum + e.amount, 0);
 
     // Category breakdown
@@ -178,18 +179,18 @@ function calculateStreak(expenses) {
   expenses.forEach(e => {
     const d = new Date(e.date);
     d.setHours(0, 0, 0, 0);
-    daysWithExpenses.add(d.toISOString().slice(0, 10));
+    daysWithExpenses.add(getLocalDateString(d));
   });
   
   let streak = 0;
-  let checkDate = today;
+  let checkDate = new Date(today);
   
   // Check if today has expenses, if not start from yesterday
-  if (!daysWithExpenses.has(checkDate.toISOString().slice(0, 10))) {
+  if (!daysWithExpenses.has(getLocalDateString(checkDate))) {
     checkDate = new Date(today.getTime() - 86400000);
   }
   
-  while (daysWithExpenses.has(checkDate.toISOString().slice(0, 10))) {
+  while (daysWithExpenses.has(getLocalDateString(checkDate))) {
     streak++;
     checkDate = new Date(checkDate.getTime() - 86400000);
   }

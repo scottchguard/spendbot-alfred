@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { useMemo } from 'react';
+import { getLocalDateString } from '../utils/dateUtils';
 
 /**
  * WeeklyChart - Visual spending breakdown by day of week
@@ -16,9 +17,9 @@ export function WeeklyChart({ expenses }) {
       const date = new Date();
       date.setDate(date.getDate() - i);
       date.setHours(0, 0, 0, 0);
-      const dateStr = date.toISOString().slice(0, 10);
+      const dateStr = getLocalDateString(date);
       
-      const dayExpenses = expenses.filter(e => e.date.startsWith(dateStr));
+      const dayExpenses = expenses.filter(e => e.date?.startsWith(dateStr));
       const total = dayExpenses.reduce((sum, e) => sum + e.amount, 0);
       
       days.push({

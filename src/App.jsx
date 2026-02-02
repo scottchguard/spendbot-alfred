@@ -14,6 +14,7 @@ import { InstallBanner } from './components/InstallBanner';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
 import { usePWA } from './hooks/usePWA';
+import { getLocalMonthString } from './utils/dateUtils';
 import { useSupabaseExpenses } from './hooks/useSupabaseExpenses';
 import { useSupabaseSettings } from './hooks/useSupabaseSettings';
 import { DEFAULT_CATEGORIES } from './constants/categories';
@@ -134,8 +135,8 @@ function AppContent() {
   };
 
   // Calculate category totals
-  const currentMonth = new Date().toISOString().slice(0, 7);
-  const monthExpenses = expenses.filter(e => e.date.startsWith(currentMonth));
+  const currentMonth = getLocalMonthString();
+  const monthExpenses = expenses.filter(e => e.date?.startsWith(currentMonth));
   const categoryTotals = DEFAULT_CATEGORIES.map(cat => {
     const total = monthExpenses
       .filter(e => e.category_id === cat.id)

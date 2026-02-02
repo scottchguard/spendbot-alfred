@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { getLocalDateString } from '../utils/dateUtils';
 
 const DEFAULT_SETTINGS = {
   monthly_budget: null,
@@ -105,7 +106,7 @@ export function useSupabaseSettings() {
   const updateStreak = async () => {
     if (!user) return;
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     const lastDate = settings.streak_data?.lastExpenseDate;
     
     let newStreak = 1;

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatCurrency } from '../utils/format';
+import { getLocalDateString, getLocalMonthString } from '../utils/dateUtils';
 import haptic from '../utils/haptics';
 import playSound from '../utils/sounds';
 
@@ -34,7 +35,7 @@ function calculateStreakSavings(expenses, categoryId, avgDailySpend) {
   
   // Count backwards from today
   while (true) {
-    const dateStr = checkDate.toISOString().slice(0, 10);
+    const dateStr = getLocalDateString(checkDate);
     const dayExpenses = expenses.filter(e => 
       e.date?.startsWith(dateStr) && 
       (!categoryId || e.category_id === categoryId)
@@ -195,7 +196,7 @@ export function MoneySavedWidget({
   );
   
   // Total avoided purchases this month
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  const currentMonth = getLocalMonthString();
   const monthAvoidedTotal = avoidedPurchases
     .filter(p => p.date?.startsWith(currentMonth))
     .reduce((sum, p) => sum + p.amount, 0);

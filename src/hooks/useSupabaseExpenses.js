@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { getLocalMonthString } from '../utils/dateUtils';
 
 export function useSupabaseExpenses() {
   const { user, isPremium } = useAuth();
@@ -78,9 +79,9 @@ export function useSupabaseExpenses() {
     }
 
     // Check free tier limit
-    const currentMonth = new Date().toISOString().slice(0, 7);
+    const month = getLocalMonthString();
     const monthExpenses = expenses.filter(e => 
-      e.date.startsWith(currentMonth)
+      e.date?.startsWith(month)
     );
 
     if (!isPremium && monthExpenses.length >= 50) {
@@ -183,8 +184,8 @@ export function useSupabaseExpenses() {
   };
 
   // Computed values
-  const currentMonth = new Date().toISOString().slice(0, 7);
-  const monthExpenses = expenses.filter(e => e.date.startsWith(currentMonth));
+  const currentMonth = getLocalMonthString();
+  const monthExpenses = expenses.filter(e => e.date?.startsWith(currentMonth));
   const monthTotal = monthExpenses.reduce((sum, e) => sum + e.amount, 0);
   const monthCount = monthExpenses.length;
   const canAddExpense = isPremium || monthCount < 50;

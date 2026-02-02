@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { useMemo } from 'react';
 import { formatCurrency } from '../utils/format';
+import { getLocalMonthString, getCurrentDayOfMonth, getDaysInCurrentMonth, getDaysRemainingInMonth } from '../utils/dateUtils';
 
 /**
  * SpendingPredictions - The crystal ball 🔮
@@ -13,11 +14,13 @@ export function SpendingPredictions({ expenses, monthlyBudget }) {
   const predictions = useMemo(() => {
     if (!expenses || expenses.length < 3) return null;
 
-    const now = new Date();
-    const currentMonth = now.toISOString().slice(0, 7);
-    const currentDay = now.getDate();
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const daysRemaining = daysInMonth - currentDay;
+    const currentMonth = getLocalMonthString();
+    const currentDay = getCurrentDayOfMonth();
+    const daysInMonth = getDaysInCurrentMonth();
+    const daysRemaining = getDaysRemainingInMonth();
+    
+    // Guard against division by zero on first day
+    if (currentDay === 0) return null;
 
     // This month's data
     const monthExpenses = expenses.filter(e => e.date?.startsWith(currentMonth));
@@ -164,10 +167,12 @@ export function MiniPrediction({ expenses, monthlyBudget }) {
   const prediction = useMemo(() => {
     if (!expenses || expenses.length < 3 || !monthlyBudget) return null;
 
-    const now = new Date();
-    const currentMonth = now.toISOString().slice(0, 7);
-    const currentDay = now.getDate();
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const currentMonth = getLocalMonthString();
+    const currentDay = getCurrentDayOfMonth();
+    const daysInMonth = getDaysInCurrentMonth();
+
+    // Guard against division by zero
+    if (currentDay === 0) return null;
 
     const monthExpenses = expenses.filter(e => e.date?.startsWith(currentMonth));
     const monthTotal = monthExpenses.reduce((sum, e) => sum + e.amount, 0);
