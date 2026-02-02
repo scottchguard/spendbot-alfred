@@ -213,8 +213,9 @@ export function DashboardV2({
     : null;
 
   const todayExpenses = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    return expenses.filter(e => e.date?.startsWith(today));
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    return expenses.filter(e => e.date?.startsWith(todayStr));
   }, [expenses]);
 
   const todayTotal = todayExpenses.reduce((sum, e) => sum + e.amount, 0);
@@ -226,7 +227,7 @@ export function DashboardV2({
     for (let i = 6; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().slice(0, 10);
+      const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
       const dayTotal = expenses
         .filter(e => e.date?.startsWith(dateStr))
         .reduce((sum, e) => sum + e.amount, 0);
