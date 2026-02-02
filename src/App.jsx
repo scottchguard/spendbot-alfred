@@ -14,6 +14,7 @@ import { InstallBanner } from './components/InstallBanner';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
 import { FunLoader } from './components/EasterEggs';
+import { CalendarView } from './components/CalendarView';
 import { usePWA } from './hooks/usePWA';
 import { getLocalMonthString } from './utils/dateUtils';
 import { useSupabaseExpenses } from './hooks/useSupabaseExpenses';
@@ -29,6 +30,7 @@ function AppContent() {
   const [showInstallBanner, setShowInstallBanner] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
   
   const { canInstall, isIOS, install, isInstalled } = usePWA();
   
@@ -164,6 +166,7 @@ function AppContent() {
             onAddClick={handleAddClick}
             onHistoryClick={() => setView('history')}
             onSettingsClick={() => setView('settings')}
+            onCalendarClick={() => setShowCalendar(true)}
           />
         )}
         
@@ -210,6 +213,17 @@ function AppContent() {
             monthCount={monthCount}
             onUpgrade={handleUpgrade}
             onClose={() => setShowPaywall(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showCalendar && (
+          <CalendarView
+            expenses={expenses}
+            categories={DEFAULT_CATEGORIES}
+            settings={{ ...settings, isPremium }}
+            onClose={() => setShowCalendar(false)}
           />
         )}
       </AnimatePresence>

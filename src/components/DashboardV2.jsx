@@ -204,6 +204,7 @@ export function DashboardV2({
   onAddClick,
   onHistoryClick,
   onSettingsClick,
+  onCalendarClick,
 }) {
   const [showRobotMessage, setShowRobotMessage] = useState(false);
   const [robotMessage, setRobotMessage] = useState(null);
@@ -328,6 +329,13 @@ export function DashboardV2({
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <motion.button 
+              whileTap={{ scale: 0.9 }}
+              onClick={onCalendarClick}
+              className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center"
+            >
+              <span className="text-xl">📅</span>
+            </motion.button>
             <motion.button 
               whileTap={{ scale: 0.9 }}
               onClick={() => setShowAchievements(true)}
