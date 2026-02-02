@@ -5,6 +5,8 @@ import { SmartInsights } from './SmartInsights';
 import { WeeklyChart, CategoryBreakdown, SpendingPace } from './SpendingChart';
 import { WelcomeCard } from './WelcomeCard';
 import { RobotBuddy, useRobotBuddy, getRandomMessage } from './RobotBuddy';
+import { SpendingPredictions, WeeklyComparison } from './SpendingPredictions';
+import { AchievementsPage } from './Achievements';
 
 function AnimatedNumber({ value, className }) {
   const [displayValue, setDisplayValue] = useState(0);
@@ -95,6 +97,7 @@ export function Dashboard({
   const recentExpenses = expenses.slice(0, 5);
   const [showRobotMessage, setShowRobotMessage] = useState(false);
   const [robotMessage, setRobotMessage] = useState(null);
+  const [showAchievements, setShowAchievements] = useState(false);
   
   // Robot buddy hook
   const { mood, getContextualMessage, getExpenseReaction } = useRobotBuddy({
@@ -154,12 +157,20 @@ export function Dashboard({
           <h1 className="text-xl font-heading font-semibold text-text-primary">
             {getCurrentMonthName()}
           </h1>
-          <button 
-            onClick={onSettingsClick} 
-            className="text-text-secondary text-2xl hover:opacity-80 transition-opacity"
-          >
-            ⚙️
-          </button>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setShowAchievements(true)} 
+              className="text-text-secondary text-2xl hover:opacity-80 transition-opacity"
+            >
+              🏆
+            </button>
+            <button 
+              onClick={onSettingsClick} 
+              className="text-text-secondary text-2xl hover:opacity-80 transition-opacity"
+            >
+              ⚙️
+            </button>
+          </div>
         </div>
 
         {/* Robot Buddy */}
@@ -223,6 +234,19 @@ export function Dashboard({
             daysInMonth={daysInMonth}
             currentDay={currentDay}
           />
+        )}
+
+        {/* Spending Predictions - The Crystal Ball 🔮 */}
+        {monthCount >= 5 && (
+          <SpendingPredictions
+            expenses={expenses}
+            monthlyBudget={settings?.monthlyBudget}
+          />
+        )}
+
+        {/* Weekly Comparison */}
+        {monthCount >= 10 && (
+          <WeeklyComparison expenses={expenses} />
         )}
 
         {/* Free tier counter */}
@@ -319,6 +343,17 @@ export function Dashboard({
       >
         +
       </motion.button>
+
+      {/* Achievements Modal */}
+      <AnimatePresence>
+        {showAchievements && (
+          <AchievementsPage
+            expenses={expenses}
+            settings={{ ...settings, streakData: streakInfo }}
+            onClose={() => setShowAchievements(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
