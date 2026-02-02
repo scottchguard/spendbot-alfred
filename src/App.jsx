@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { LandingPage } from './components/LandingPage';
 import { AuthScreen } from './components/AuthScreen';
 import { Dashboard } from './components/Dashboard';
 import { AddExpense } from './components/AddExpense';
@@ -21,6 +22,7 @@ function AppContent() {
   const [showPaywall, setShowPaywall] = useState(false);
   const [showInstallBanner, setShowInstallBanner] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showAuth, setShowAuth] = useState(false); // Track if user clicked "Get Started"
   
   const { canInstall, isIOS, install, isInstalled } = usePWA();
   
@@ -58,9 +60,12 @@ function AppContent() {
     );
   }
 
-  // Not authenticated - show auth screen
+  // Not authenticated - show landing page or auth screen
   if (!user) {
-    return <AuthScreen />;
+    if (showAuth) {
+      return <AuthScreen onBack={() => setShowAuth(false)} />;
+    }
+    return <LandingPage onGetStarted={() => setShowAuth(true)} />;
   }
 
   // Still loading data

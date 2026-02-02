@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { formatCurrency, formatTime, getCurrentMonthName } from '../utils/format';
 import { SmartInsights } from './SmartInsights';
 import { WeeklyChart, CategoryBreakdown, SpendingPace } from './SpendingChart';
 import { WelcomeCard } from './WelcomeCard';
+import { RobotBuddy, useRobotBuddy, getRandomMessage } from './RobotBuddy';
 
 function AnimatedNumber({ value, className }) {
   const [displayValue, setDisplayValue] = useState(0);
@@ -92,10 +93,45 @@ export function Dashboard({
   userName
 }) {
   const recentExpenses = expenses.slice(0, 5);
+  const [showRobotMessage, setShowRobotMessage] = useState(false);
+  const [robotMessage, setRobotMessage] = useState(null);
+  
+  // Robot buddy hook
+  const { mood, getContextualMessage, getExpenseReaction } = useRobotBuddy({
+    expenses,
+    settings,
+    monthTotal,
+  });
   
   const budgetPercentage = settings?.monthlyBudget 
     ? Math.min((monthTotal / settings.monthlyBudget) * 100, 100)
     : null;
+
+  // Show robot greeting on mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      let messageType = 'greeting';
+      
+      // Contextual greetings
+      const hour = new Date().getHours();
+      if (hour >= 23 || hour < 5) {
+        messageType = 'lateNight';
+      } else if (monthCount === 0) {
+        messageType = 'empty';
+      } else if (streakInfo?.current >= 3) {
+        messageType = 'streak';
+      }
+      
+      const msg = getRandomMessage(messageType, { n: streakInfo?.current });
+      setRobotMessage(msg);
+      setShowRobotMessage(true);
+      
+      // Hide after 4 seconds
+      setTimeout(() => setShowRobotMessage(false), 4000);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   // Calculate date info for insights
   const now = new Date();
@@ -124,6 +160,22 @@ export function Dashboard({
           >
             ⚙️
           </button>
+        </div>
+
+        {/* Robot Buddy */}
+        <div className="flex justify-center mb-4">
+          <RobotBuddy 
+            mood={mood}
+            size="lg"
+            message={showRobotMessage ? robotMessage : null}
+            showMessage={showRobotMessage}
+            onTap={() => {
+              const msg = getRandomMessage('greeting');
+              setRobotMessage(msg);
+              setShowRobotMessage(true);
+              setTimeout(() => setShowRobotMessage(false), 3000);
+            }}
+          />
         </div>
 
         {/* Monthly Total */}
@@ -234,9 +286,13 @@ export function Dashboard({
         
         {recentExpenses.length === 0 && !showWelcome ? (
           <div className="text-center py-12">
-            <div className="text-5xl mb-4">🤖</div>
-            <p className="text-text-secondary">No expenses yet!</p>
-            <p className="text-text-muted text-sm mt-1">
+            <RobotBuddy 
+              mood="thinking"
+              size="lg"
+              message={getRandomMessage('empty')}
+              showMessage={true}
+            />
+            <p className="text-text-muted text-sm mt-4">
               Tap the + button to track your first purchase.
             </p>
           </div>

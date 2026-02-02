@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail } from '../lib/supabase';
 
-export function AuthScreen() {
+export function AuthScreen({ onBack }) {
   const [mode, setMode] = useState('signin'); // 'signin' | 'signup' | 'email'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -59,6 +59,16 @@ export function AuthScreen() {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-sm"
       >
+        {/* Back Button */}
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="text-text-secondary text-sm flex items-center gap-1 mb-6"
+          >
+            ← Back to home
+          </button>
+        )}
+        
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="text-6xl mb-4">🤖</div>

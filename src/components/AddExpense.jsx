@@ -4,15 +4,27 @@ import { NumberPad } from './NumberPad';
 import { CategorySelector } from './CategorySelector';
 import { Confetti, SuccessCheck } from './Confetti';
 import { formatCurrency } from '../utils/format';
+import { RobotBuddy, getRandomMessage } from './RobotBuddy';
 
 export function AddExpense({ categories, onSave, onClose, canAdd }) {
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState(null);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [robotReaction, setRobotReaction] = useState(null);
+  const [robotMood, setRobotMood] = useState('happy');
 
   const amountCents = Math.round(parseFloat(amount || '0') * 100);
+  const amountDollars = amountCents / 100;
   const isValid = amountCents > 0 && category !== null;
+
+  // Get robot reaction based on amount
+  const getRobotReaction = (dollars) => {
+    if (dollars < 10) return { mood: 'happy', type: 'smallExpense' };
+    if (dollars < 50) return { mood: 'happy', type: 'mediumExpense' };
+    if (dollars < 200) return { mood: 'surprised', type: 'largeExpense' };
+    return { mood: 'worried', type: 'hugeExpense' };
+  };
 
   const handleInput = (value) => {
     if (value === '.' && amount.includes('.')) return;
@@ -35,10 +47,15 @@ export function AddExpense({ categories, onSave, onClose, canAdd }) {
     const result = await onSave(amountCents, category.id);
     
     if (result.success) {
+      // Get robot reaction based on amount
+      const reaction = getRobotReaction(amountDollars);
+      setRobotMood(reaction.mood);
+      setRobotReaction(getRandomMessage(reaction.type));
       setSuccess(true);
+      
       setTimeout(() => {
         onClose();
-      }, 800);
+      }, 1500); // Extended to show robot reaction
     } else {
       setSaving(false);
       // TODO: Show paywall
@@ -70,10 +87,25 @@ export function AddExpense({ categories, onSave, onClose, canAdd }) {
           {success ? (
             <motion.div
               key="success"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-center"
             >
-              <SuccessCheck category={category} />
+              <RobotBuddy 
+                mood={robotMood}
+                size="xl"
+                message={robotReaction}
+                showMessage={true}
+                animate={true}
+              />
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="mt-4 text-accent font-semibold"
+              >
+                ✓ Saved!
+              </motion.div>
             </motion.div>
           ) : (
             <motion.div
