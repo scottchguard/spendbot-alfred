@@ -6,6 +6,7 @@ import { getLocalDateString } from '../utils/dateUtils';
 const DEFAULT_SETTINGS = {
   monthly_budget: null,
   custom_categories: null,
+  onboarding_complete: false,
   streak_data: {
     currentStreak: 0,
     lastExpenseDate: null,
@@ -144,6 +145,7 @@ export function useSupabaseSettings() {
     settings: {
       monthlyBudget: settings.monthly_budget,
       customCategories: settings.custom_categories,
+      onboardingComplete: settings.onboarding_complete,
       streakData: settings.streak_data,
     },
     loading,
@@ -155,6 +157,9 @@ export function useSupabaseSettings() {
       }
       if (updates.customCategories !== undefined) {
         dbUpdates.custom_categories = updates.customCategories;
+      }
+      if (updates.onboardingComplete !== undefined) {
+        dbUpdates.onboarding_complete = updates.onboardingComplete;
       }
       if (updates.streakData !== undefined) {
         dbUpdates.streak_data = updates.streakData;
