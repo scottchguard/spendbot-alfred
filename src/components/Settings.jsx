@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatCurrency } from '../utils/format';
 import { signOut } from '../lib/supabase';
@@ -70,6 +70,13 @@ export function Settings({ settings, categories, onUpdate, onExport, onClearAll,
   const [exporting, setExporting] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [showExportSuccess, setShowExportSuccess] = useState(false);
+
+  // Sync budget state when settings load/change
+  useEffect(() => {
+    if (settings?.monthlyBudget !== undefined) {
+      setBudget(settings.monthlyBudget ? (settings.monthlyBudget / 100).toString() : '');
+    }
+  }, [settings?.monthlyBudget]);
 
   const handleBudgetSave = () => {
     const value = parseFloat(budget);
