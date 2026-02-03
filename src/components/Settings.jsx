@@ -235,7 +235,10 @@ export function Settings({ settings, categories, onUpdate, onExport, onClearAll,
               {settings?.isPremium ? (
                 <span className="text-success font-medium">Active ✓</span>
               ) : (
-                <button className="px-4 py-2 bg-accent text-white rounded-xl font-medium text-sm">
+                <button 
+                  onClick={() => alert('Premium upgrade coming soon! For now, enjoy unlimited tracking.')}
+                  className="px-4 py-2 bg-accent text-white rounded-xl font-medium text-sm"
+                >
                   Upgrade $9.99
                 </button>
               )}

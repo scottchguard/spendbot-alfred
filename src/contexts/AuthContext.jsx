@@ -32,8 +32,6 @@ export function AuthProvider({ children }) {
         setLoading(false);
       });
 
-    return () => clearTimeout(timeout);
-
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -53,7 +51,9 @@ export function AuthProvider({ children }) {
       }
     );
 
+    // Cleanup both timeout and subscription
     return () => {
+      clearTimeout(timeout);
       subscription.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

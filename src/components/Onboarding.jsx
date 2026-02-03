@@ -28,9 +28,9 @@ const STEPS = [
   },
   {
     emoji: '🔒',
-    title: '100% Private',
-    subtitle: 'Your data never leaves your device.',
-    hint: 'No accounts. No cloud. No creepy ads.',
+    title: 'Private & Secure',
+    subtitle: 'Your data is encrypted and protected.',
+    hint: 'Synced securely to your account. We never sell your data.',
   },
 ];
 
