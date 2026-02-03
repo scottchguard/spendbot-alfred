@@ -367,14 +367,17 @@ const CELEBRATION_MESSAGES = [
 
 // Calculate achievement stats from expenses
 export function calculateAchievementStats(expenses, settings = {}) {
+  // Guard against undefined/null expenses
+  const safeExpenses = expenses || [];
+  
   const stats = {
-    totalExpenses: expenses.length,
+    totalExpenses: safeExpenses.length,
     currentStreak: settings?.streakData?.currentStreak || 0,
     longestStreak: settings?.streakData?.longestStreak || 0,
     monthsUnderBudget: settings?.monthsUnderBudget || 0,
     monthsWayUnderBudget: settings?.monthsWayUnderBudget || 0,
     monthsWayOverBudget: settings?.monthsWayOverBudget || 0,
-    uniqueCategories: new Set(expenses.map(e => e.category_id)).size,
+    uniqueCategories: new Set(safeExpenses.map(e => e.category_id)).size,
     hasEarlyExpense: false,
     hasLateExpense: false,
     largestExpense: 0,
@@ -399,7 +402,7 @@ export function calculateAchievementStats(expenses, settings = {}) {
   let hasSaturday = false;
   let hasSunday = false;
   
-  expenses.forEach((expense, index) => {
+  safeExpenses.forEach((expense, index) => {
     const date = new Date(expense.date || expense.created_at);
     const hour = date.getHours();
     const day = date.getDay();
