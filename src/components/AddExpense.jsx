@@ -26,7 +26,7 @@ export function AddExpense({ categories, onSave, onClose, canAdd, expenses = [] 
   const getRobotReaction = (dollars, categoryName = null) => {
     // For larger amounts, use the roast system (50% chance)
     if (dollars >= 20 && Math.random() < 0.5) {
-      const roast = getSpendingRoast(dollars, categoryName);
+      const roast = getSpendingRoast(dollars * 100, categoryName); // Convert to cents
       if (roast) {
         const mood = dollars >= 100 ? 'worried' : dollars >= 50 ? 'surprised' : 'happy';
         return { mood, message: roast, showAlternative: dollars >= 50 };
