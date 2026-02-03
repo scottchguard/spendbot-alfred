@@ -448,19 +448,17 @@ export function calculateAchievementStats(expenses, settings = {}) {
       stats.hasLucky777 = true;
     }
     
-    // Category tracking (simple name matching)
-    const categoryName = expense.category?.toLowerCase() || '';
-    if (categoryName.includes('coffee') || categoryName.includes('cafe')) {
-      stats.coffeeExpenses++;
-      // Rough monthly coffee tracking (last 30 days)
+    // Category tracking
+    const categoryId = expense.category_id?.toLowerCase() || '';
+    if (categoryId === 'food') {
+      stats.coffeeExpenses++; // food category includes coffee/cafe
+      stats.foodExpenses++;
+      // Rough monthly food tracking (last 30 days)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       if (date > thirtyDaysAgo) {
         stats.monthlyCoffeeSpend += expense.amount;
       }
-    }
-    if (categoryName.includes('food') || categoryName.includes('restaurant') || categoryName.includes('dining')) {
-      stats.foodExpenses++;
     }
   });
 

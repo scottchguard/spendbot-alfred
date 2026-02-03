@@ -147,7 +147,7 @@ export function analyzeSpendingPersonality(expenses, settings = {}) {
     totalAmount += expense.amount;
     
     // Category tracking
-    const cat = expense.category?.toLowerCase() || 'other';
+    const cat = expense.category_id?.toLowerCase() || 'other';
     stats.topCategories[cat] = (stats.topCategories[cat] || 0) + 1;
     
     // Time patterns
