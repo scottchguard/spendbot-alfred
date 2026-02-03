@@ -194,12 +194,14 @@ export function DailyChallenge({ expenses, onComplete }) {
   const [dismissed, setDismissed] = useState(false);
   const [celebrated, setCelebrated] = useState(false);
   
+  const safeExpenses = expenses || [];
+  
   const challengeData = useMemo(() => {
     const today = getLocalDateString();
     const yesterday = getLocalDateString(new Date(Date.now() - 86400000));
     
-    const todayExpenses = expenses.filter(e => e.date?.startsWith(today));
-    const yesterdayExpenses = expenses.filter(e => e.date?.startsWith(yesterday));
+    const todayExpenses = safeExpenses.filter(e => e.date?.startsWith(today));
+    const yesterdayExpenses = safeExpenses.filter(e => e.date?.startsWith(yesterday));
     
     const todayTotal = todayExpenses.reduce((sum, e) => sum + e.amount, 0);
     const yesterdayTotal = yesterdayExpenses.reduce((sum, e) => sum + e.amount, 0);
@@ -207,7 +209,7 @@ export function DailyChallenge({ expenses, onComplete }) {
     
     // Calculate daily average from last 30 days
     const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
-    const recentExpenses = expenses.filter(e => new Date(e.date) >= thirtyDaysAgo);
+    const recentExpenses = safeExpenses.filter(e => new Date(e.date) >= thirtyDaysAgo);
     const totalSpent = recentExpenses.reduce((sum, e) => sum + e.amount, 0);
     const daysWithData = new Set(recentExpenses.map(e => e.date?.slice(0, 10))).size;
     const dailyAvg = daysWithData > 0 ? totalSpent / daysWithData : 0;
@@ -219,7 +221,7 @@ export function DailyChallenge({ expenses, onComplete }) {
       todayExpenses,
       dailyAvg,
     };
-  }, [expenses]);
+  }, [safeExpenses]);
   
   const challenge = useMemo(() => {
     return getTodaysChallenge(getDayOfYear(), challengeData);

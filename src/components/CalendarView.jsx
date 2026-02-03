@@ -94,7 +94,7 @@ export function CalendarView({
     const totals = {};
     const counts = {};
     
-    expenses.forEach(exp => {
+    (expenses || []).forEach(exp => {
       const dateKey = exp.date?.split('T')[0];
       if (dateKey) {
         totals[dateKey] = (totals[dateKey] || 0) + exp.amount;

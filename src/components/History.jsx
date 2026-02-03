@@ -75,7 +75,7 @@ function DatePicker({ selectedDate, onSelect, onClose, expenses }) {
   // Get expense dates for highlighting
   const expenseDates = useMemo(() => {
     const dates = new Set();
-    expenses.forEach(e => {
+    (expenses || []).forEach(e => {
       dates.add(new Date(e.date).toDateString());
     });
     return dates;
