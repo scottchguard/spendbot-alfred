@@ -226,7 +226,7 @@ export function CalendarView({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-40"
+      className="fixed inset-0 z-40 bg-[#0A0A0F]"
     >
       <AnimatedBackground variant="mesh" intensity="low" className="min-h-screen">
         <NoiseTexture opacity={0.02} />
