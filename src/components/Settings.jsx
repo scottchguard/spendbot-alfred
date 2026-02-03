@@ -128,14 +128,22 @@ export function Settings({ settings, categories, onUpdate, onExport, onClearAll,
   };
 
   const handleClearAll = async () => {
-    await onClearAll();
-    setShowClearConfirm(false);
+    try {
+      await onClearAll();
+    } finally {
+      setShowClearConfirm(false);
+    }
   };
 
   const handleSignOut = async () => {
     setSigningOut(true);
-    await signOut();
-    // Auth state change will redirect to login
+    try {
+      await signOut();
+      // Auth state change will redirect to login
+    } catch (err) {
+      console.error('Sign out error:', err);
+      setSigningOut(false);
+    }
   };
 
   // Get provider info from user metadata
