@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const STEPS = [
@@ -97,19 +97,41 @@ function ProgressDots({ current, total }) {
 
 export function Onboarding({ onComplete }) {
   const [step, setStep] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
   const isLast = step === STEPS.length - 1;
 
-  const handleNext = () => {
+  const handleComplete = useCallback(async () => {
+    if (isLoading) return; // Prevent double-clicks
+    setIsLoading(true);
+    
+    try {
+      await onComplete();
+    } catch (error) {
+      console.error('Onboarding completion error:', error);
+      // Still try to complete even if settings update fails
+      // The user can proceed - we'll sync settings later
+      try {
+        await onComplete();
+      } catch {
+        // Force completion on second failure - don't trap user
+        console.warn('Forcing onboarding completion after error');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [onComplete, isLoading]);
+
+  const handleNext = useCallback(async () => {
     if (isLast) {
-      onComplete();
+      await handleComplete();
     } else {
       setStep(s => s + 1);
     }
-  };
+  }, [isLast, handleComplete]);
 
-  const handleSkip = () => {
-    onComplete();
-  };
+  const handleSkip = useCallback(async () => {
+    await handleComplete();
+  }, [handleComplete]);
 
   return (
     <motion.div
@@ -122,9 +144,12 @@ export function Onboarding({ onComplete }) {
       <div className="flex justify-end p-4">
         <button
           onClick={handleSkip}
-          className="text-text-muted text-sm hover:text-text-secondary transition-colors"
+          onTouchEnd={(e) => { e.preventDefault(); handleSkip(); }}
+          disabled={isLoading}
+          className="text-text-muted text-sm hover:text-text-secondary transition-colors
+                     disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
         >
-          Skip
+          {isLoading ? 'Loading...' : 'Skip'}
         </button>
       </div>
 
@@ -141,11 +166,26 @@ export function Onboarding({ onComplete }) {
         
         <motion.button
           onClick={handleNext}
-          whileTap={{ scale: 0.98 }}
+          onTouchEnd={(e) => { e.preventDefault(); handleNext(); }}
+          disabled={isLoading}
+          whileTap={{ scale: isLoading ? 1 : 0.98 }}
           className="w-full py-4 bg-accent text-white rounded-2xl font-semibold text-lg
-                     shadow-lg shadow-accent/25 hover:shadow-accent/40 transition-shadow"
+                     shadow-lg shadow-accent/25 hover:shadow-accent/40 transition-shadow
+                     disabled:opacity-70 disabled:cursor-not-allowed touch-manipulation"
         >
-          {isLast ? "Let's Go! 🚀" : 'Continue'}
+          {isLoading ? (
+            <span className="flex items-center justify-center gap-2">
+              <motion.span
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+              >
+                ⚙️
+              </motion.span>
+              Setting up...
+            </span>
+          ) : (
+            isLast ? "Let's Go! 🚀" : 'Continue'
+          )}
         </motion.button>
       </div>
     </motion.div>

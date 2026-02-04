@@ -17,20 +17,38 @@ export function AuthProvider({ children }) {
       }
     }, 5000);
 
-    // Get initial session
-    supabase.auth.getSession()
-      .then(({ data: { session } }) => {
-        setUser(session?.user ?? null);
+    // Get initial session - with refresh attempt for stale sessions
+    const initSession = async () => {
+      try {
+        // First try to get existing session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Session error:', error);
+          // Try refreshing the session in case it's stale (Safari idle issue)
+          const { data: refreshData } = await supabase.auth.refreshSession();
+          if (refreshData?.session) {
+            setUser(refreshData.session.user);
+            await fetchProfile(refreshData.session.user.id);
+            return;
+          }
+          setLoading(false);
+          return;
+        }
+        
         if (session?.user) {
-          fetchProfile(session.user.id);
+          setUser(session.user);
+          await fetchProfile(session.user.id);
         } else {
           setLoading(false);
         }
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error('Auth session error:', error);
         setLoading(false);
-      });
+      }
+    };
+
+    initSession();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(

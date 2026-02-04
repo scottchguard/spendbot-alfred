@@ -112,7 +112,13 @@ function AppContent() {
     return (
       <Onboarding 
         onComplete={async () => {
-          await updateSettings({ onboardingComplete: true });
+          try {
+            await updateSettings({ onboardingComplete: true });
+          } catch (error) {
+            console.error('Failed to save onboarding status:', error);
+            // Don't trap the user - they can proceed even if save fails
+            // Settings will be created on next successful auth
+          }
           setShowOnboarding(false);
         }} 
       />
