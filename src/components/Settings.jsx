@@ -92,7 +92,13 @@ export function Settings({ settings, categories, onUpdate, onExport, onClearAll,
   const handleExport = async () => {
     setExporting(true);
     try {
-      const expenses = await onExport();
+      const expenses = await onExport() || [];
+      
+      if (expenses.length === 0) {
+        // Nothing to export
+        setExporting(false);
+        return;
+      }
       
       // Build CSV
       const headers = ['Date', 'Category', 'Amount', 'Note'];
