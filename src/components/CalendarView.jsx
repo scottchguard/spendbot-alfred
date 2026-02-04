@@ -226,12 +226,12 @@ export function CalendarView({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-40 bg-[#0A0A0F]"
+      className="fixed inset-0 z-40 bg-[#0A0A0F] overflow-y-auto"
     >
       <AnimatedBackground variant="mesh" intensity="low" className="min-h-screen">
         <NoiseTexture opacity={0.02} />
         
-        <div className="pb-8 px-4 pt-12">
+        <div className="pb-8 px-4 pt-12 min-h-full">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <motion.button
@@ -351,7 +351,7 @@ export function CalendarView({
 
           {/* Best/Worst Days */}
           {(monthStats.bestDay.date || monthStats.worstDay.date) && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 pb-8">
               {monthStats.bestDay.date && (
                 <GlassCard variant="success" padding="sm">
                   <p className="text-xs text-text-muted mb-1">Best Day</p>
