@@ -1,7 +1,16 @@
 import { loadStripe } from '@stripe/stripe-js';
 
+// Validate Stripe publishable key exists
+const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+if (!stripePublishableKey) {
+  console.error(
+    '[Stripe] Missing VITE_STRIPE_PUBLISHABLE_KEY environment variable. ' +
+    'Stripe checkout will not work. Please add it to your .env file or Netlify environment variables.'
+  );
+}
+
 // Initialize Stripe with publishable key
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : Promise.resolve(null);
 
 /**
  * Create a Stripe Checkout session and redirect to payment

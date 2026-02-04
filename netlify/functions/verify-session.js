@@ -41,6 +41,7 @@ exports.handler = async (event) => {
     const email = session.metadata?.email || session.customer_email;
 
     // If paid, update Supabase as a backup (webhook should also do this)
+    // Security: Only update if we have a valid user_id from the session metadata
     if (paid && userId) {
       const { error: updateError } = await supabase
         .from('profiles')
@@ -53,17 +54,9 @@ exports.handler = async (event) => {
       }
     }
 
-    // Fallback: if no userId but we have email, try to find and update
-    if (paid && !userId && email) {
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ is_premium: true })
-        .eq('email', email);
-
-      if (updateError) {
-        console.error('Failed to update premium by email:', updateError);
-      }
-    }
+    // Note: We intentionally do NOT fall back to email-only updates
+    // as this could allow unauthorized premium upgrades if someone
+    // knows another user's email address
 
     return {
       statusCode: 200,

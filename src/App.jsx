@@ -147,12 +147,6 @@ function AppContent() {
     return { ...result, success: !result.error && !result.limitReached };
   };
 
-  const handleUpgrade = () => {
-    // TODO: Integrate Stripe checkout
-    setShowPaywall(false);
-    alert('Stripe integration coming soon!');
-  };
-
   // Calculate category totals
   const currentMonth = getLocalMonthString();
   const monthExpenses = expenses.filter(e => e.date?.startsWith(currentMonth));
@@ -230,7 +224,6 @@ function AppContent() {
         {showPaywall && (
           <Paywall
             monthCount={monthCount}
-            onUpgrade={handleUpgrade}
             onClose={() => setShowPaywall(false)}
           />
         )}

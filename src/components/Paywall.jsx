@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { redirectToCheckout } from '../lib/stripe';
 
@@ -11,14 +12,24 @@ const FEATURES = [
   { emoji: '💚', text: 'Support indie development' },
 ];
 
-export function Paywall({ monthCount, onUpgrade, onClose }) {
+export function Paywall({ monthCount, onClose }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const handleSignIn = () => {
+    onClose();
+    // Navigate to root which will show auth screen for unauthenticated users
+    navigate('/');
+    // Force a page reload to reset auth state and show login
+    window.location.reload();
+  };
+
   const handleUpgrade = async () => {
     if (!user) {
-      setError('Please sign in first');
+      // This shouldn't happen in normal flow, but handle gracefully
+      setError('Please sign in to continue');
       return;
     }
 
@@ -95,6 +106,22 @@ export function Paywall({ monthCount, onUpgrade, onClose }) {
         {error && (
           <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-center">
             <p className="text-red-400 text-sm">{error}</p>
+          </div>
+        )}
+
+        {/* Sign in prompt for unauthenticated users */}
+        {!user && (
+          <div className="mb-4 p-4 bg-accent/10 border border-accent/30 rounded-xl text-center">
+            <p className="text-text-secondary text-sm mb-3">
+              Sign in to unlock Premium features
+            </p>
+            <motion.button
+              onClick={handleSignIn}
+              whileTap={{ scale: 0.98 }}
+              className="px-6 py-2 bg-accent text-white rounded-xl font-medium text-sm"
+            >
+              Sign In
+            </motion.button>
           </div>
         )}
 
