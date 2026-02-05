@@ -1,27 +1,29 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LandingPage } from './components/LandingPage';
 import { AuthScreen } from './components/AuthScreen';
 import { DashboardV2 as Dashboard } from './components/DashboardV2';
-import { AddExpense } from './components/AddExpense';
-import { History } from './components/History';
-import { Settings } from './components/Settings';
-import { Onboarding } from './components/Onboarding';
-import { Paywall } from './components/Paywall';
-import { PremiumSuccess } from './components/PremiumSuccess';
 import { InstallBanner } from './components/InstallBanner';
-import { PrivacyPage } from './pages/PrivacyPage';
-import { TermsPage } from './pages/TermsPage';
 import { FunLoader } from './components/EasterEggs';
-import { CalendarView } from './components/CalendarView';
 import { usePWA } from './hooks/usePWA';
 import { getLocalMonthString } from './utils/dateUtils';
 import { useSupabaseExpenses } from './hooks/useSupabaseExpenses';
 import { useSupabaseSettings } from './hooks/useSupabaseSettings';
 import { DEFAULT_CATEGORIES } from './constants/categories';
 import { initAudio } from './utils/sounds';
+
+// Lazy load components that aren't needed on initial render
+const AddExpense = lazy(() => import('./components/AddExpense').then(m => ({ default: m.AddExpense })));
+const History = lazy(() => import('./components/History').then(m => ({ default: m.History })));
+const Settings = lazy(() => import('./components/Settings').then(m => ({ default: m.Settings })));
+const Onboarding = lazy(() => import('./components/Onboarding').then(m => ({ default: m.Onboarding })));
+const Paywall = lazy(() => import('./components/Paywall').then(m => ({ default: m.Paywall })));
+const CalendarView = lazy(() => import('./components/CalendarView').then(m => ({ default: m.CalendarView })));
+const PremiumSuccess = lazy(() => import('./components/PremiumSuccess').then(m => ({ default: m.PremiumSuccess })));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then(m => ({ default: m.PrivacyPage })));
+const TermsPage = lazy(() => import('./pages/TermsPage').then(m => ({ default: m.TermsPage })));
 
 function AppContent() {
   const { user, profile, loading: authLoading, isPremium } = useAuth();
@@ -111,21 +113,23 @@ function AppContent() {
   // Show onboarding for new users
   if (showOnboarding) {
     return (
-      <Onboarding 
-        onComplete={async () => {
-          // Use try/finally to GUARANTEE setShowOnboarding(false) is called
-          // User should NEVER be trapped on onboarding screen
-          try {
-            await updateSettings({ onboardingComplete: true });
-          } catch (error) {
-            console.error('Failed to save onboarding status:', error);
-            // Don't trap the user - they can proceed even if save fails
-            // Settings will be created on next successful auth
-          } finally {
-            setShowOnboarding(false);
-          }
-        }} 
-      />
+      <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><FunLoader message="Loading..." /></div>}>
+        <Onboarding 
+          onComplete={async () => {
+            // Use try/finally to GUARANTEE setShowOnboarding(false) is called
+            // User should NEVER be trapped on onboarding screen
+            try {
+              await updateSettings({ onboardingComplete: true });
+            } catch (error) {
+              console.error('Failed to save onboarding status:', error);
+              // Don't trap the user - they can proceed even if save fails
+              // Settings will be created on next successful auth
+            } finally {
+              setShowOnboarding(false);
+            }
+          }} 
+        />
+      </Suspense>
     );
   }
 
@@ -187,59 +191,69 @@ function AppContent() {
         )}
         
         {view === 'history' && (
-          <History
-            key="history"
-            expenses={expenses}
-            categories={DEFAULT_CATEGORIES}
-            onDelete={deleteExpense}
-            onBack={() => setView('dashboard')}
-          />
+          <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><FunLoader message="Loading history..." /></div>}>
+            <History
+              key="history"
+              expenses={expenses}
+              categories={DEFAULT_CATEGORIES}
+              onDelete={deleteExpense}
+              onBack={() => setView('dashboard')}
+            />
+          </Suspense>
         )}
         
         {view === 'settings' && (
-          <Settings
-            key="settings"
-            settings={{ ...settings, isPremium }}
-            categories={DEFAULT_CATEGORIES}
-            onUpdate={updateSettings}
-            onExport={getExpensesForExport}
-            onClearAll={clearAllExpenses}
-            onBack={() => setView('dashboard')}
-            user={user}
-            profile={profile}
-          />
+          <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><FunLoader message="Loading settings..." /></div>}>
+            <Settings
+              key="settings"
+              settings={{ ...settings, isPremium }}
+              categories={DEFAULT_CATEGORIES}
+              onUpdate={updateSettings}
+              onExport={getExpensesForExport}
+              onClearAll={clearAllExpenses}
+              onBack={() => setView('dashboard')}
+              user={user}
+              profile={profile}
+            />
+          </Suspense>
         )}
       </AnimatePresence>
       
       <AnimatePresence>
         {showAdd && (
-          <AddExpense
-            categories={DEFAULT_CATEGORIES}
-            canAdd={canAddExpense}
-            expenses={expenses}
-            onSave={handleSave}
-            onClose={() => setShowAdd(false)}
-          />
+          <Suspense fallback={null}>
+            <AddExpense
+              categories={DEFAULT_CATEGORIES}
+              canAdd={canAddExpense}
+              expenses={expenses}
+              onSave={handleSave}
+              onClose={() => setShowAdd(false)}
+            />
+          </Suspense>
         )}
       </AnimatePresence>
       
       <AnimatePresence>
         {showPaywall && (
-          <Paywall
-            monthCount={monthCount}
-            onClose={() => setShowPaywall(false)}
-          />
+          <Suspense fallback={null}>
+            <Paywall
+              monthCount={monthCount}
+              onClose={() => setShowPaywall(false)}
+            />
+          </Suspense>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {showCalendar && (
-          <CalendarView
-            expenses={expenses}
-            categories={DEFAULT_CATEGORIES}
-            settings={{ ...settings, isPremium }}
-            onClose={() => setShowCalendar(false)}
-          />
+          <Suspense fallback={null}>
+            <CalendarView
+              expenses={expenses}
+              categories={DEFAULT_CATEGORIES}
+              settings={{ ...settings, isPremium }}
+              onClose={() => setShowCalendar(false)}
+            />
+          </Suspense>
         )}
       </AnimatePresence>
       
@@ -255,18 +269,37 @@ function AppContent() {
   );
 }
 
+// Minimal fallback for route-level suspense
+function RouteFallback() {
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <FunLoader message="Loading page..." />
+    </div>
+  );
+}
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         {/* Public pages - accessible without auth */}
-        <Route path="/privacy" element={<PrivacyPage />} />
-        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={
+          <Suspense fallback={<RouteFallback />}>
+            <PrivacyPage />
+          </Suspense>
+        } />
+        <Route path="/terms" element={
+          <Suspense fallback={<RouteFallback />}>
+            <TermsPage />
+          </Suspense>
+        } />
         
         {/* Premium success page - needs AuthProvider for user context */}
         <Route path="/success" element={
           <AuthProvider>
-            <PremiumSuccess />
+            <Suspense fallback={<RouteFallback />}>
+              <PremiumSuccess />
+            </Suspense>
           </AuthProvider>
         } />
         
