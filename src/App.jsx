@@ -2,6 +2,7 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { LandingPage } from './components/LandingPage';
 import { AuthScreen } from './components/AuthScreen';
 import { DashboardV2 as Dashboard } from './components/DashboardV2';
@@ -280,8 +281,9 @@ function RouteFallback() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Routes>
         {/* Public pages - accessible without auth */}
         <Route path="/privacy" element={
           <Suspense fallback={<RouteFallback />}>
@@ -309,8 +311,9 @@ function App() {
             <AppContent />
           </AuthProvider>
         } />
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 
