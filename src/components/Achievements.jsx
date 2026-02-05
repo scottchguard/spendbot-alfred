@@ -590,7 +590,7 @@ export function AchievementsPage({ expenses, settings, onClose }) {
       {/* Header */}
       <div className="sticky top-0 bg-background/80 backdrop-blur-lg border-b border-border z-10">
         <div className="flex items-center justify-between px-6 py-4">
-          <button onClick={onClose} className="text-text-secondary">
+          <button onClick={onClose} className="text-text-secondary" aria-label="Close achievements and go back">
             ← Back
           </button>
           <h1 className="text-lg font-semibold">Achievements</h1>

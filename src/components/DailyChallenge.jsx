@@ -274,6 +274,7 @@ export function DailyChallenge({ expenses, onComplete }) {
       <button
         onClick={() => setDismissed(true)}
         className="absolute top-3 right-3 text-text-muted hover:text-text-secondary"
+        aria-label="Dismiss daily challenge"
       >
         ✕
       </button>
