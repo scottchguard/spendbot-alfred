@@ -327,22 +327,25 @@ export function DashboardV2({
               whileTap={{ scale: 0.9 }}
               onClick={onCalendarClick}
               className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center"
+              aria-label="Open calendar view"
             >
-              <span className="text-xl">📅</span>
+              <span className="text-xl" aria-hidden="true">📅</span>
             </motion.button>
             <motion.button 
               whileTap={{ scale: 0.9 }}
               onClick={() => setShowAchievements(true)}
               className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center"
+              aria-label="View achievements"
             >
-              <span className="text-xl">🏆</span>
+              <span className="text-xl" aria-hidden="true">🏆</span>
             </motion.button>
             <motion.button 
               whileTap={{ scale: 0.9 }}
               onClick={onSettingsClick}
               className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center"
+              aria-label="Open settings"
             >
-              <span className="text-xl">⚙️</span>
+              <span className="text-xl" aria-hidden="true">⚙️</span>
             </motion.button>
           </div>
         </motion.div>
@@ -550,8 +553,9 @@ export function DashboardV2({
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.5, type: 'spring' }}
+          aria-label="Add new expense"
         >
-          +
+          <span aria-hidden="true">+</span>
         </motion.button>
       </div>
 

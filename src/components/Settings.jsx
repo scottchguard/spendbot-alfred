@@ -215,7 +215,7 @@ export function Settings({ settings, categories, onUpdate, onExport, onClearAll,
               {profile?.avatar_url && (
                 <img 
                   src={profile.avatar_url} 
-                  alt="" 
+                  alt={`${profile?.full_name || 'User'}'s profile picture`}
                   className="w-10 h-10 rounded-full"
                 />
               )}

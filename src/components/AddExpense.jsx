@@ -60,11 +60,15 @@ export function AddExpense({ categories, onSave, onClose, expenses = [] }) {
       
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4">
-        <button onClick={onClose} className="text-text-secondary text-lg">
+        <button 
+          onClick={onClose} 
+          className="text-text-secondary text-lg"
+          aria-label="Cancel and close"
+        >
           Cancel
         </button>
-        <span className="text-text-muted text-sm">Add Expense</span>
-        <div className="w-16" />
+        <span className="text-text-muted text-sm" id="add-expense-title">Add Expense</span>
+        <div className="w-16" aria-hidden="true" />
       </div>
 
       {/* Amount Display */}

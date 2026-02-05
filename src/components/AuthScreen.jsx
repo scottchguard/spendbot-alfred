@@ -165,6 +165,8 @@ export function AuthScreen({ onBack }) {
                 placeholder="Email"
                 required
                 disabled={loading}
+                aria-label="Email address"
+                autoComplete="email"
                 className="w-full px-4 py-3 bg-surface-raised border border-border rounded-xl 
                            text-text-primary placeholder-text-muted focus:outline-none focus:border-accent
                            disabled:opacity-50"
@@ -179,6 +181,8 @@ export function AuthScreen({ onBack }) {
                   required
                   minLength={6}
                   disabled={loading}
+                  aria-label="Password"
+                  autoComplete="current-password"
                   className="w-full px-4 py-3 pr-12 bg-surface-raised border border-border rounded-xl 
                              text-text-primary placeholder-text-muted focus:outline-none focus:border-accent
                              disabled:opacity-50"
@@ -187,8 +191,9 @@ export function AuthScreen({ onBack }) {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showPassword ? '🙈' : '👁️'}
+                  <span aria-hidden="true">{showPassword ? '🙈' : '👁️'}</span>
                 </button>
               </div>
 
@@ -263,6 +268,8 @@ export function AuthScreen({ onBack }) {
                 placeholder="Email"
                 required
                 disabled={loading}
+                aria-label="Email address"
+                autoComplete="email"
                 className="w-full px-4 py-3 bg-surface-raised border border-border rounded-xl 
                            text-text-primary placeholder-text-muted focus:outline-none focus:border-accent
                            disabled:opacity-50"
@@ -277,6 +284,8 @@ export function AuthScreen({ onBack }) {
                   required
                   minLength={6}
                   disabled={loading}
+                  aria-label="Password, minimum 6 characters"
+                  autoComplete="new-password"
                   className="w-full px-4 py-3 pr-12 bg-surface-raised border border-border rounded-xl 
                              text-text-primary placeholder-text-muted focus:outline-none focus:border-accent
                              disabled:opacity-50"
@@ -285,8 +294,9 @@ export function AuthScreen({ onBack }) {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showPassword ? '🙈' : '👁️'}
+                  <span aria-hidden="true">{showPassword ? '🙈' : '👁️'}</span>
                 </button>
               </div>
 
