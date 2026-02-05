@@ -285,12 +285,14 @@ function App() {
     <ErrorBoundary>
       <BrowserRouter>
         <Routes>
-        {/* Visual QA Test Page - bypass auth */}
-        <Route path="/test" element={
-          <Suspense fallback={<RouteFallback />}>
-            <TestPage />
-          </Suspense>
-        } />
+        {/* Visual QA Test Page - dev only */}
+        {import.meta.env.DEV && (
+          <Route path="/test" element={
+            <Suspense fallback={<RouteFallback />}>
+              <TestPage />
+            </Suspense>
+          } />
+        )}
         
         {/* Public pages - accessible without auth */}
         <Route path="/privacy" element={
