@@ -287,9 +287,11 @@ function App() {
         <Routes>
         {/* Visual QA Test Page - temporarily enabled for QA */}
         <Route path="/test" element={
-          <Suspense fallback={<RouteFallback />}>
-            <TestPage />
-          </Suspense>
+          <AuthProvider>
+            <Suspense fallback={<RouteFallback />}>
+              <TestPage />
+            </Suspense>
+          </AuthProvider>
         } />
         
         {/* Public pages - accessible without auth */}
