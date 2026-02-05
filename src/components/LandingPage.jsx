@@ -65,7 +65,7 @@ export function LandingPage({ onGetStarted }) {
           />
           <FeatureCard 
             emoji="💰"
-            title="$9.99 Forever"
+            title="$4.99 Forever"
             description="One payment, lifetime access. No subscriptions, no upsells, no BS."
           />
         </motion.div>
