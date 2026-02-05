@@ -96,6 +96,15 @@ select:focus-visible {
   }
 }
 
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera */
+}
+
 /* Prevent text selection on interactive elements */
 .no-select {
   -webkit-user-select: none;
