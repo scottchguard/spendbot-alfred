@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatCurrency } from '../utils/format';
 import { signOut } from '../lib/supabase';
+import { redirectToCheckout } from '../lib/stripe';
 import { Toast } from './Toast';
 
 function SettingRow({ label, description, children }) {
@@ -70,6 +71,27 @@ export function Settings({ settings, categories, onUpdate, onExport, onClearAll,
   const [exporting, setExporting] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [showExportSuccess, setShowExportSuccess] = useState(false);
+  const [upgrading, setUpgrading] = useState(false);
+  const [upgradeError, setUpgradeError] = useState(null);
+
+  const handleUpgrade = async () => {
+    if (!user) {
+      setUpgradeError('Please sign in to upgrade');
+      return;
+    }
+    
+    setUpgrading(true);
+    setUpgradeError(null);
+    
+    try {
+      await redirectToCheckout(user.id, user.email);
+      // User will be redirected to Stripe
+    } catch (err) {
+      console.error('Checkout error:', err);
+      setUpgradeError(err.message || 'Failed to start checkout. Please try again.');
+      setUpgrading(false);
+    }
+  };
 
   // Sync budget state when settings load/change
   useEffect(() => {
@@ -264,12 +286,18 @@ export function Settings({ settings, categories, onUpdate, onExport, onClearAll,
               {settings?.isPremium ? (
                 <span className="text-success font-medium">Active ✓</span>
               ) : (
-                <button 
-                  onClick={() => alert('Premium upgrade coming soon! For now, enjoy unlimited tracking.')}
-                  className="px-4 py-2 bg-accent text-white rounded-xl font-medium text-sm"
-                >
-                  Upgrade $9.99
-                </button>
+                <div className="flex flex-col items-end gap-1">
+                  <button 
+                    onClick={handleUpgrade}
+                    disabled={upgrading}
+                    className="px-4 py-2 bg-accent text-white rounded-xl font-medium text-sm disabled:opacity-50"
+                  >
+                    {upgrading ? 'Loading...' : 'Upgrade $4.99'}
+                  </button>
+                  {upgradeError && (
+                    <span className="text-red-400 text-xs">{upgradeError}</span>
+                  )}
+                </div>
               )}
             </SettingRow>
           </div>
