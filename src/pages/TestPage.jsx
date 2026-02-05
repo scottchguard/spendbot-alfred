@@ -1,6 +1,7 @@
 // Visual QA Test Page - renders components without auth
 import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
+import { AuthContext } from '../contexts/AuthContext';
 import { DashboardV2 as Dashboard } from '../components/DashboardV2';
 import { AddExpense } from '../components/AddExpense';
 import { History } from '../components/History';
@@ -37,6 +38,16 @@ const MOCK_PROFILE = {
   email: 'test@example.com',
   full_name: 'Test User',
   is_premium: false,
+};
+
+// Mock auth context value for testing without real authentication
+const MOCK_AUTH_VALUE = {
+  user: MOCK_USER,
+  profile: MOCK_PROFILE,
+  loading: false,
+  updateProfile: async () => ({ data: MOCK_PROFILE, error: null }),
+  isAuthenticated: true,
+  isPremium: false,
 };
 
 export function TestPage() {
