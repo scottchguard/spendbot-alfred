@@ -19,6 +19,13 @@ export function useSupabaseSettings() {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
 
+  // Helper to check if error is an abort (should be ignored/retried)
+  const isAbortError = (err) => {
+    return err?.name === 'AbortError' || 
+           err?.message?.includes('AbortError') ||
+           err?.message?.includes('signal is aborted');
+  };
+
   // Fetch settings from Supabase - inline createDefaultSettings to avoid dependency issues
   const fetchSettings = useCallback(async () => {
     if (!user) {
@@ -47,6 +54,8 @@ export function useSupabaseSettings() {
           setSettings(data);
         }
       } catch (err) {
+        // Ignore AbortError during settings creation
+        if (isAbortError(err)) return;
         console.error('Error creating default settings:', err);
       }
     };
@@ -59,7 +68,10 @@ export function useSupabaseSettings() {
         .maybeSingle(); // Use maybeSingle() to avoid 406 when no rows
 
       if (error) {
-        console.error('Error fetching settings:', error);
+        // Ignore AbortError
+        if (!isAbortError(error)) {
+          console.error('Error fetching settings:', error);
+        }
       }
 
       if (data) {
@@ -73,7 +85,10 @@ export function useSupabaseSettings() {
         await createDefaults();
       }
     } catch (err) {
-      console.error('Error fetching settings:', err);
+      // Ignore AbortError - happens during auth transitions
+      if (!isAbortError(err)) {
+        console.error('Error fetching settings:', err);
+      }
     } finally {
       setLoading(false);
     }
@@ -83,7 +98,7 @@ export function useSupabaseSettings() {
     fetchSettings();
   }, [fetchSettings]);
 
-  // Update settings with timeout to prevent hanging on stale sessions
+  // Update settings with timeout and retry to prevent hanging on stale sessions
   const updateSettings = async (updates) => {
     if (!user) return { error: 'Not authenticated' };
 
@@ -92,26 +107,35 @@ export function useSupabaseSettings() {
       setTimeout(() => reject(new Error('Settings update timed out')), 8000)
     );
 
-    try {
-      // Race the update against the timeout
-      const { data, error } = await Promise.race([
-        supabase
-          .from('user_settings')
-          .update(updates)
-          .eq('user_id', user.id)
-          .select()
-          .single(),
-        timeoutPromise
-      ]);
+    const maxRetries = 2;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        // Race the update against the timeout
+        const { data, error } = await Promise.race([
+          supabase
+            .from('user_settings')
+            .update(updates)
+            .eq('user_id', user.id)
+            .select()
+            .single(),
+          timeoutPromise
+        ]);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      setSettings(prev => ({ ...prev, ...data }));
-      return { data, error: null };
-    } catch (err) {
-      console.error('Error updating settings:', err);
-      return { error: err.message };
+        setSettings(prev => ({ ...prev, ...data }));
+        return { data, error: null };
+      } catch (err) {
+        if (isAbortError(err) && attempt < maxRetries) {
+          console.log(`Settings update aborted, retrying (attempt ${attempt + 1}/${maxRetries})...`);
+          await new Promise(r => setTimeout(r, 500));
+          continue;
+        }
+        console.error('Error updating settings:', err);
+        return { error: err.message };
+      }
     }
+    return { error: 'Unknown error' };
   };
 
   // Update streak

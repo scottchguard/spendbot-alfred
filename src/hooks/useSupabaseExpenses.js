@@ -9,6 +9,13 @@ export function useSupabaseExpenses() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Helper to check if error is an abort (should be ignored)
+  const isAbortError = (err) => {
+    return err?.name === 'AbortError' || 
+           err?.message?.includes('AbortError') ||
+           err?.message?.includes('signal is aborted');
+  };
+
   // Fetch expenses from Supabase
   const fetchExpenses = useCallback(async () => {
     if (!user) {
@@ -29,6 +36,11 @@ export function useSupabaseExpenses() {
       // Transform to match existing format (cents to dollars handled in UI)
       setExpenses(data || []);
     } catch (err) {
+      // Ignore AbortError - happens during auth refresh or component unmount
+      if (isAbortError(err)) {
+        console.log('Fetch aborted (expected during auth transitions)');
+        return;
+      }
       console.error('Error fetching expenses:', err);
       setError(err.message);
     } finally {
@@ -93,32 +105,47 @@ export function useSupabaseExpenses() {
       setTimeout(() => reject(new Error('Save timed out - please try again')), 10000)
     );
 
-    try {
-      const { data, error } = await Promise.race([
-        supabase
-          .from('expenses')
-          .insert({
-            user_id: user.id,
-            amount, // in cents
-            category_id: categoryId,
-            note: note || null,
-            date: date || new Date().toISOString(),
-          })
-          .select()
-          .single(),
-        timeoutPromise
-      ]);
+    // Retry logic for AbortError (happens during auth refresh)
+    const maxRetries = 2;
+    let lastError = null;
 
-      if (error) throw error;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const { data, error } = await Promise.race([
+          supabase
+            .from('expenses')
+            .insert({
+              user_id: user.id,
+              amount, // in cents
+              category_id: categoryId,
+              note: note || null,
+              date: date || new Date().toISOString(),
+            })
+            .select()
+            .single(),
+          timeoutPromise
+        ]);
 
-      return { data, error: null };
-    } catch (err) {
-      console.error('Error adding expense:', err);
-      return { error: err.message };
+        if (error) throw error;
+
+        return { data, error: null };
+      } catch (err) {
+        lastError = err;
+        // If it's an AbortError and we have retries left, wait and retry
+        if (isAbortError(err) && attempt < maxRetries) {
+          console.log(`Request aborted, retrying (attempt ${attempt + 1}/${maxRetries})...`);
+          await new Promise(r => setTimeout(r, 500)); // Wait 500ms before retry
+          continue;
+        }
+        console.error('Error adding expense:', err);
+        return { error: err.message };
+      }
     }
+
+    return { error: lastError?.message || 'Unknown error' };
   };
 
-  // Delete expense with timeout
+  // Delete expense with timeout and retry
   const deleteExpense = async (id) => {
     if (!user) {
       return { error: 'Not authenticated' };
@@ -128,26 +155,33 @@ export function useSupabaseExpenses() {
       setTimeout(() => reject(new Error('Delete timed out - please try again')), 10000)
     );
 
-    try {
-      const { error } = await Promise.race([
-        supabase
-          .from('expenses')
-          .delete()
-          .eq('id', id)
-          .eq('user_id', user.id),
-        timeoutPromise
-      ]);
+    const maxRetries = 2;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const { error } = await Promise.race([
+          supabase
+            .from('expenses')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', user.id),
+          timeoutPromise
+        ]);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      return { error: null };
-    } catch (err) {
-      console.error('Error deleting expense:', err);
-      return { error: err.message };
+        return { error: null };
+      } catch (err) {
+        if (isAbortError(err) && attempt < maxRetries) {
+          await new Promise(r => setTimeout(r, 500));
+          continue;
+        }
+        console.error('Error deleting expense:', err);
+        return { error: err.message };
+      }
     }
   };
 
-  // Update expense with timeout
+  // Update expense with timeout and retry
   const updateExpense = async (id, updates) => {
     if (!user) {
       return { error: 'Not authenticated' };
@@ -157,24 +191,31 @@ export function useSupabaseExpenses() {
       setTimeout(() => reject(new Error('Update timed out - please try again')), 10000)
     );
 
-    try {
-      const { data, error } = await Promise.race([
-        supabase
-          .from('expenses')
-          .update(updates)
-          .eq('id', id)
-          .eq('user_id', user.id)
-          .select()
-          .single(),
-        timeoutPromise
-      ]);
+    const maxRetries = 2;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const { data, error } = await Promise.race([
+          supabase
+            .from('expenses')
+            .update(updates)
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .select()
+            .single(),
+          timeoutPromise
+        ]);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      return { data, error: null };
-    } catch (err) {
-      console.error('Error updating expense:', err);
-      return { error: err.message };
+        return { data, error: null };
+      } catch (err) {
+        if (isAbortError(err) && attempt < maxRetries) {
+          await new Promise(r => setTimeout(r, 500));
+          continue;
+        }
+        console.error('Error updating expense:', err);
+        return { error: err.message };
+      }
     }
   };
 

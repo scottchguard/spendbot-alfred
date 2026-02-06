@@ -92,7 +92,10 @@ export function AuthProvider({ children }) {
           }
         }
       } catch (error) {
-        console.error('Auth session error:', error);
+        // Ignore AbortError - happens during auth transitions
+        if (!isAbortError(error)) {
+          console.error('Auth session error:', error);
+        }
         setLoading(false);
       }
     };
@@ -107,6 +110,13 @@ export function AuthProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Helper to check if error is an abort (should be ignored)
+  const isAbortError = (err) => {
+    return err?.name === 'AbortError' || 
+           err?.message?.includes('AbortError') ||
+           err?.message?.includes('signal is aborted');
+  };
+
   const fetchProfile = async (userId) => {
     try {
       const { data, error } = await supabase
@@ -116,12 +126,18 @@ export function AuthProvider({ children }) {
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
+        // Ignore AbortError - happens during auth transitions
+        if (!isAbortError(error)) {
+          console.error('Error fetching profile:', error);
+        }
       }
       
       setProfile(data);
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      // Ignore AbortError
+      if (!isAbortError(error)) {
+        console.error('Error fetching profile:', error);
+      }
     } finally {
       setLoading(false);
     }
@@ -146,13 +162,19 @@ export function AuthProvider({ children }) {
         });
 
         if (error) {
-          console.error('Error creating profile:', error);
+          // Ignore AbortError
+          if (!isAbortError(error)) {
+            console.error('Error creating profile:', error);
+          }
         }
       }
 
       await fetchProfile(user.id);
     } catch (error) {
-      console.error('Error ensuring profile:', error);
+      // Ignore AbortError
+      if (!isAbortError(error)) {
+        console.error('Error ensuring profile:', error);
+      }
     }
   };
 
