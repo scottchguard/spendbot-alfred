@@ -180,3 +180,49 @@ export async function updateSettings(updates: Partial<UserSettings>): Promise<vo
 export async function getCategories(): Promise<Category[]> {
   return await db.categories.orderBy('sortOrder').toArray();
 }
+
+// Category management functions
+export async function addCategory(
+  name: string,
+  emoji: string,
+  color: string
+): Promise<string> {
+  const id = crypto.randomUUID();
+  const categories = await getCategories();
+  const maxSortOrder = categories.reduce((max, cat) => Math.max(max, cat.sortOrder), -1);
+  
+  await db.categories.add({
+    id,
+    name,
+    emoji,
+    color,
+    isDefault: false,
+    sortOrder: maxSortOrder + 1,
+  });
+  return id;
+}
+
+export async function updateCategory(
+  id: string,
+  updates: { name?: string; emoji?: string; color?: string }
+): Promise<void> {
+  await db.categories.update(id, updates);
+}
+
+export async function deleteCategory(id: string): Promise<void> {
+  await db.categories.delete(id);
+}
+
+export async function getCategoryExpenseCount(categoryId: string): Promise<number> {
+  return await db.expenses
+    .where('categoryId')
+    .equals(categoryId)
+    .count();
+}
+
+export async function reassignExpenses(fromCategoryId: string, toCategoryId: string): Promise<void> {
+  await db.expenses
+    .where('categoryId')
+    .equals(fromCategoryId)
+    .modify({ categoryId: toCategoryId });
+}
