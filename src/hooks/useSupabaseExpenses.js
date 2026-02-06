@@ -72,7 +72,7 @@ export function useSupabaseExpenses() {
     };
   }, [user, fetchExpenses]);
 
-  // Add expense
+  // Add expense with timeout to prevent hanging on stale sessions
   const addExpense = async ({ amount, categoryId, note, date }) => {
     if (!user) {
       return { error: 'Not authenticated' };
@@ -88,18 +88,26 @@ export function useSupabaseExpenses() {
       return { error: 'limit_reached', limitReached: true };
     }
 
+    // Create a timeout promise to prevent hanging on stale sessions
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Save timed out - please try again')), 10000)
+    );
+
     try {
-      const { data, error } = await supabase
-        .from('expenses')
-        .insert({
-          user_id: user.id,
-          amount, // in cents
-          category_id: categoryId,
-          note: note || null,
-          date: date || new Date().toISOString(),
-        })
-        .select()
-        .single();
+      const { data, error } = await Promise.race([
+        supabase
+          .from('expenses')
+          .insert({
+            user_id: user.id,
+            amount, // in cents
+            category_id: categoryId,
+            note: note || null,
+            date: date || new Date().toISOString(),
+          })
+          .select()
+          .single(),
+        timeoutPromise
+      ]);
 
       if (error) throw error;
 
@@ -110,18 +118,25 @@ export function useSupabaseExpenses() {
     }
   };
 
-  // Delete expense
+  // Delete expense with timeout
   const deleteExpense = async (id) => {
     if (!user) {
       return { error: 'Not authenticated' };
     }
 
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Delete timed out - please try again')), 10000)
+    );
+
     try {
-      const { error } = await supabase
-        .from('expenses')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id);
+      const { error } = await Promise.race([
+        supabase
+          .from('expenses')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', user.id),
+        timeoutPromise
+      ]);
 
       if (error) throw error;
 
@@ -132,20 +147,27 @@ export function useSupabaseExpenses() {
     }
   };
 
-  // Update expense
+  // Update expense with timeout
   const updateExpense = async (id, updates) => {
     if (!user) {
       return { error: 'Not authenticated' };
     }
 
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Update timed out - please try again')), 10000)
+    );
+
     try {
-      const { data, error } = await supabase
-        .from('expenses')
-        .update(updates)
-        .eq('id', id)
-        .eq('user_id', user.id)
-        .select()
-        .single();
+      const { data, error } = await Promise.race([
+        supabase
+          .from('expenses')
+          .update(updates)
+          .eq('id', id)
+          .eq('user_id', user.id)
+          .select()
+          .single(),
+        timeoutPromise
+      ]);
 
       if (error) throw error;
 

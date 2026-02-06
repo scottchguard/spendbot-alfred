@@ -11,6 +11,7 @@ export function AddExpense({ categories, onSave, onClose, expenses = [] }) {
   const [category, setCategory] = useState(null);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(null);
 
   const amountCents = Math.round(parseFloat(amount || '0') * 100);
   const isValid = amountCents > 0 && category !== null;
@@ -32,6 +33,7 @@ export function AddExpense({ categories, onSave, onClose, expenses = [] }) {
   const handleSave = async () => {
     if (!isValid || saving) return;
     setSaving(true);
+    setError(null);
     
     const result = await onSave(amountCents, category.id);
     
@@ -44,7 +46,12 @@ export function AddExpense({ categories, onSave, onClose, expenses = [] }) {
       }, 800);
     } else {
       setSaving(false);
-      // TODO: Show paywall
+      // Show error message if it's a timeout or other error (not limit reached - that shows paywall)
+      if (result.error && !result.limitReached) {
+        setError(result.error);
+        // Auto-clear error after 4 seconds
+        setTimeout(() => setError(null), 4000);
+      }
     }
   };
 
@@ -158,6 +165,22 @@ export function AddExpense({ categories, onSave, onClose, expenses = [] }) {
       {!success && (
         <NumberPad onInput={handleInput} onDelete={handleDelete} />
       )}
+
+      {/* Error Message */}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="px-6 pb-2"
+          >
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-center">
+              <span className="text-red-400 text-sm">{error}</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Save Button */}
       <div className="px-6 pb-8">
