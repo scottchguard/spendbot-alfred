@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { initializeDB } from './db';
 import Dashboard from './pages/Dashboard';
 import AddExpense from './pages/AddExpense';
+import EditExpense from './pages/EditExpense';
 import History from './pages/History';
 import Settings from './pages/Settings';
 import Onboarding from './pages/Onboarding';
@@ -43,6 +44,7 @@ function App() {
             <>
               <Route path="/" element={<Dashboard />} />
               <Route path="/add" element={<AddExpense />} />
+              <Route path="/edit/:id" element={<EditExpense />} />
               <Route path="/history" element={<History />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<Navigate to="/" replace />} />

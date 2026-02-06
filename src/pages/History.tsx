@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
-import { ArrowLeft, Search, Trash2 } from 'lucide-react';
+import { ArrowLeft, Search, Trash2, Pencil } from 'lucide-react';
 import { getAllExpenses, getCategories, deleteExpense, Expense, Category, getSettings } from '../db';
 
 interface GroupedExpenses {
@@ -12,11 +12,14 @@ interface GroupedExpenses {
 }
 
 export default function History() {
+  const navigate = useNavigate();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [currency, setCurrency] = useState('USD');
   const [isLoading, setIsLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const dragStartX = useRef<number>(0);
+  const wasDragging = useRef<boolean>(false);
 
   useEffect(() => {
     loadData();
@@ -92,9 +95,26 @@ export default function History() {
     setDeleteId(null);
   };
 
+  const handleDragStart = () => {
+    wasDragging.current = false;
+  };
+
+  const handleDrag = (_: any, info: PanInfo) => {
+    if (Math.abs(info.offset.x) > 10) {
+      wasDragging.current = true;
+    }
+  };
+
   const handleDragEnd = (id: string, info: PanInfo) => {
     if (info.offset.x < -100) {
       setDeleteId(id);
+    }
+  };
+
+  const handleExpenseClick = (id: string) => {
+    // Only navigate if not dragging
+    if (!wasDragging.current) {
+      navigate(`/edit/${id}`);
     }
   };
 
@@ -178,13 +198,21 @@ export default function History() {
                           <Trash2 className="w-5 h-5 text-white" />
                         </div>
 
+                        {/* Edit hint background (right side, shows on tap) */}
+                        <div className="absolute inset-y-0 left-0 w-16 bg-accent/20 flex items-center pl-4 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                          <Pencil className="w-4 h-4 text-accent" />
+                        </div>
+
                         {/* Swipeable expense card */}
                         <motion.div
                           drag="x"
                           dragConstraints={{ left: -100, right: 0 }}
                           dragElastic={0.1}
+                          onDragStart={handleDragStart}
+                          onDrag={handleDrag}
                           onDragEnd={(_, info) => handleDragEnd(expense.id, info)}
-                          className="relative bg-background py-4 flex items-center gap-4 cursor-grab active:cursor-grabbing"
+                          onClick={() => handleExpenseClick(expense.id)}
+                          className="relative bg-background py-4 flex items-center gap-4 cursor-pointer active:bg-surface-raised/50 transition-colors"
                         >
                           <div 
                             className="w-12 h-12 rounded-xl flex items-center justify-center text-xl"

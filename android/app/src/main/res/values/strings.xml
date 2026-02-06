@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SpendBot</string>
+    <string name="title_activity_main">SpendBot</string>
+    <string name="package_name">com.loopspur.spendbot</string>
+    <string name="custom_url_scheme">com.loopspur.spendbot</string>
+</resources>

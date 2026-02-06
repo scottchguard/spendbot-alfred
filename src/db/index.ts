@@ -101,6 +101,20 @@ export async function deleteExpense(id: string): Promise<void> {
   await db.expenses.delete(id);
 }
 
+export async function updateExpense(
+  id: string,
+  updates: { amount?: number; categoryId?: string; note?: string }
+): Promise<void> {
+  await db.expenses.update(id, {
+    ...updates,
+    updatedAt: new Date(),
+  });
+}
+
+export async function getExpenseById(id: string): Promise<Expense | undefined> {
+  return await db.expenses.get(id);
+}
+
 export async function getMonthlyTotal(year: number, month: number): Promise<number> {
   const startDate = new Date(year, month, 1);
   const endDate = new Date(year, month + 1, 0, 23, 59, 59);
