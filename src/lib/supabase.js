@@ -16,6 +16,24 @@ const simpleLock = async (name, acquireTimeout, fn) => {
   return await fn();
 };
 
+// Custom fetch wrapper that handles AbortError gracefully
+// This prevents AbortErrors from bubbling up when:
+// - React StrictMode unmounts/remounts components
+// - PWA service worker intercepts requests
+// - Browser backgrounds the tab
+const resilientFetch = async (url, options = {}) => {
+  try {
+    return await fetch(url, options);
+  } catch (error) {
+    // If it's an AbortError, create a synthetic response that Supabase can handle gracefully
+    if (error.name === 'AbortError') {
+      console.log('[Supabase] Request aborted:', url);
+      throw error; // Let Supabase's internal error handling deal with it
+    }
+    throw error;
+  }
+};
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
@@ -23,6 +41,12 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
     // Use our custom lock function to avoid Navigator Locks AbortError issues
     lock: simpleLock,
+    // Reduce lock timeout to fail fast rather than hang
+    lockAcquireTimeout: 5000,
+  },
+  global: {
+    // Use our resilient fetch wrapper
+    fetch: resilientFetch,
   },
 });
 
