@@ -9,12 +9,14 @@ import {
   getSettings,
   getTodayStats,
   getWeekStats,
+  getStreak,
   Expense,
   Category,
   UserSettings,
 } from '../db';
 import AnimatedNumber from '../components/AnimatedNumber';
 import ExpenseItem from '../components/ExpenseItem';
+import { EmptyStates } from '../components/EmptyState';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -24,6 +26,7 @@ export default function Dashboard() {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [todayStats, setTodayStats] = useState({ total: 0, count: 0 });
   const [weekStats, setWeekStats] = useState({ total: 0, count: 0 });
+  const [streak, setStreak] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   const now = new Date();
@@ -38,13 +41,14 @@ export default function Dashboard() {
   }, []);
 
   async function loadData() {
-    const [total, expenses, cats, userSettings, today, week] = await Promise.all([
+    const [total, expenses, cats, userSettings, today, week, streakVal] = await Promise.all([
       getMonthlyTotal(now.getFullYear(), now.getMonth()),
       getRecentExpenses(5),
       getCategories(),
       getSettings(),
       getTodayStats(),
       getWeekStats(),
+      getStreak(),
     ]);
     setMonthlyTotal(total);
     setRecentExpenses(expenses);
@@ -52,6 +56,7 @@ export default function Dashboard() {
     setSettings(userSettings || null);
     setTodayStats(today);
     setWeekStats(week);
+    setStreak(streakVal);
     setIsLoading(false);
   }
 
@@ -94,6 +99,11 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold text-text-primary">{monthName}</h1>
           <div className="text-sm text-text-secondary flex items-center gap-2">
             {daysRemaining} days left
+            {streak > 0 && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#EF4444' }}>
+                🔥 {streak} day streak
+              </span>
+            )}
           </div>
         </div>
         <div className="flex gap-2">
@@ -228,17 +238,7 @@ export default function Dashboard() {
         </div>
 
         {recentExpenses.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center py-12"
-          >
-            <div className="text-6xl mb-4">🤖</div>
-            <p className="text-text-secondary mb-2">No expenses yet!</p>
-            <p className="text-text-muted text-sm">
-              Tap the + button to track your first purchase.
-            </p>
-          </motion.div>
+          EmptyStates.noExpenses(() => navigate('/add'))
         ) : (
           <div className="bg-surface-raised rounded-2xl overflow-hidden">
             <AnimatePresence>
@@ -290,11 +290,11 @@ export default function Dashboard() {
         transition={{ delay: 0.5, type: 'spring', stiffness: 400, damping: 25 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => navigate('/add')}
-        className="fixed bottom-8 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full flex items-center justify-center text-white text-3xl z-50"
+        className="fixed left-1/2 -translate-x-1/2 w-16 h-16 rounded-full flex items-center justify-center text-white text-3xl z-50"
         style={{
+          bottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))',
           background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
-          boxShadow:
-            '0 4px 20px rgba(99, 102, 241, 0.4), 0 0 0 4px rgba(99, 102, 241, 0.1)',
+          boxShadow: '0 4px 20px rgba(99, 102, 241, 0.4), 0 0 0 4px rgba(99, 102, 241, 0.1)',
         }}
         aria-label="Add expense"
       >

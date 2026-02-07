@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Plus, Pencil, Trash2, Check, X, AlertTriangle } from 'lucide-react';
-import { 
-  getCategories, 
-  getSettings, 
+import { ArrowLeft, Plus, Pencil, Trash2, Check, X, AlertTriangle, ChevronRight } from 'lucide-react';
+import {
+  getCategories,
+  getSettings,
   updateSettings,
   addCategory,
   updateCategory,
@@ -12,15 +12,12 @@ import {
   getCategoryExpenseCount,
   reassignExpenses,
   getExpensesByCategory,
-  Category, 
+  getAllExpenses,
+  Category,
   UserSettings,
-  DEFAULT_CATEGORIES
 } from '../db';
 
-// Common emoji options for categories
 const EMOJI_OPTIONS = ['🍔', '🚗', '🛒', '🎬', '🏠', '🛍️', '💊', '✈️', '📱', '📦', '💰', '🎮', '☕', '🍕', '🏋️', '🎵', '📚', '🐕', '💇', '🔧'];
-
-// Common color options
 const COLOR_OPTIONS = ['#FB923C', '#60A5FA', '#34D399', '#C084FC', '#94A3B8', '#F472B6', '#F87171', '#22D3EE', '#A78BFA', '#9CA3AF', '#FBBF24', '#10B981'];
 
 interface EditingCategory {
@@ -30,28 +27,72 @@ interface EditingCategory {
   color: string;
 }
 
+// Reusable SettingsRow per spec
+function SettingsRow({
+  icon,
+  label,
+  value,
+  meta,
+  destructive,
+  onClick,
+}: {
+  icon: string;
+  label: string;
+  value?: string;
+  meta?: string;
+  destructive?: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center p-4 border-b border-surface-elevated last:border-b-0 active:bg-surface-elevated transition-colors text-left ${
+        destructive ? '' : ''
+      }`}
+    >
+      <div className="w-8 h-8 flex items-center justify-center bg-surface rounded-lg text-base mr-3 flex-shrink-0">
+        {icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className={`text-base ${destructive ? 'text-danger' : 'text-text-primary'}`}>
+          {label}
+        </div>
+        {value && <div className="text-sm text-text-secondary mt-0.5">{value}</div>}
+      </div>
+      {meta && <span className="text-sm text-text-muted ml-2">{meta}</span>}
+      {onClick && (
+        <ChevronRight className="w-4 h-4 text-text-muted ml-1 flex-shrink-0" />
+      )}
+    </button>
+  );
+}
+
 export default function Settings() {
   const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
   const [settings, setSettings] = useState<UserSettings | null>(null);
+  const [categorySpend, setCategorySpend] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Budget state
   const [budget, setBudget] = useState('');
   const [showBudgetInput, setShowBudgetInput] = useState(false);
-  
+
   // Category editing state
   const [editingCategory, setEditingCategory] = useState<EditingCategory | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
-  
-  // Category spend totals
-  const [categorySpends, setCategorySpends] = useState<Record<string, number>>({});
-  
-  // Delete confirmation state
+
+  // Delete confirmation
   const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
   const [deleteExpenseCount, setDeleteExpenseCount] = useState(0);
-  const [reassignTarget, setReassignTarget] = useState<string>('');
+  const [reassignTarget, setReassignTarget] = useState('');
+
+  // Clear data confirmation
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  // Is PWA installed
+  const isInstalled = window.matchMedia('(display-mode: standalone)').matches;
 
   useEffect(() => {
     loadData();
@@ -59,57 +100,43 @@ export default function Settings() {
 
   async function loadData() {
     const now = new Date();
-    const [cats, userSettings, spends] = await Promise.all([
+    const [cats, userSettings, spend] = await Promise.all([
       getCategories(),
       getSettings(),
       getExpensesByCategory(now.getFullYear(), now.getMonth()),
     ]);
     setCategories(cats);
     setSettings(userSettings || null);
-    setCategorySpends(spends);
+    setCategorySpend(spend);
     if (userSettings?.monthlyBudget) {
       setBudget((userSettings.monthlyBudget / 100).toString());
     }
     setIsLoading(false);
   }
 
-  const formatCurrency = (cents: number) => {
-    return new Intl.NumberFormat('en-US', {
+  const formatCurrency = (cents: number) =>
+    new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: settings?.currency || 'USD',
     }).format(cents / 100);
-  };
 
   const handleBudgetSave = async () => {
     const value = parseFloat(budget);
     if (!isNaN(value) && value > 0) {
       await updateSettings({ monthlyBudget: Math.round(value * 100) });
-      setSettings(prev => prev ? { ...prev, monthlyBudget: Math.round(value * 100) } : null);
+      setSettings((prev) => (prev ? { ...prev, monthlyBudget: Math.round(value * 100) } : null));
     } else if (budget === '' || budget === '0') {
       await updateSettings({ monthlyBudget: undefined });
-      setSettings(prev => prev ? { ...prev, monthlyBudget: undefined } : null);
+      setSettings((prev) => (prev ? { ...prev, monthlyBudget: undefined } : null));
     }
     setShowBudgetInput(false);
   };
 
-  // Category management
-  const startAddCategory = () => {
-    setEditingCategory({
-      id: null,
-      name: '',
-      emoji: '📦',
-      color: '#6B7280',
-    });
-  };
+  const startAddCategory = () =>
+    setEditingCategory({ id: null, name: '', emoji: '📦', color: '#6B7280' });
 
-  const startEditCategory = (cat: Category) => {
-    setEditingCategory({
-      id: cat.id,
-      name: cat.name,
-      emoji: cat.emoji,
-      color: cat.color,
-    });
-  };
+  const startEditCategory = (cat: Category) =>
+    setEditingCategory({ id: cat.id, name: cat.name, emoji: cat.emoji, color: cat.color });
 
   const cancelEditing = () => {
     setEditingCategory(null);
@@ -119,23 +146,15 @@ export default function Settings() {
 
   const saveCategory = async () => {
     if (!editingCategory || !editingCategory.name.trim()) return;
-
     if (editingCategory.id) {
-      // Update existing
       await updateCategory(editingCategory.id, {
         name: editingCategory.name.trim(),
         emoji: editingCategory.emoji,
         color: editingCategory.color,
       });
     } else {
-      // Add new
-      await addCategory(
-        editingCategory.name.trim(),
-        editingCategory.emoji,
-        editingCategory.color
-      );
+      await addCategory(editingCategory.name.trim(), editingCategory.emoji, editingCategory.color);
     }
-    
     cancelEditing();
     await loadData();
   };
@@ -144,28 +163,51 @@ export default function Settings() {
     const count = await getCategoryExpenseCount(cat.id);
     setDeleteExpenseCount(count);
     setDeletingCategory(cat);
-    // Default reassign target to "other" category
-    const otherCat = categories.find(c => c.id === 'other');
+    const otherCat = categories.find((c) => c.id === 'other');
     setReassignTarget(otherCat?.id || categories[0]?.id || '');
   };
 
   const confirmDelete = async () => {
     if (!deletingCategory) return;
-
     if (deleteExpenseCount > 0 && reassignTarget) {
       await reassignExpenses(deletingCategory.id, reassignTarget);
     }
     await deleteCategory(deletingCategory.id);
-    
     setDeletingCategory(null);
     setDeleteExpenseCount(0);
     await loadData();
   };
 
-  const cancelDelete = () => {
-    setDeletingCategory(null);
-    setDeleteExpenseCount(0);
-    setReassignTarget('');
+  const handleExportCSV = async () => {
+    const expenses = await getAllExpenses();
+    const cats = await getCategories();
+    const catMap = Object.fromEntries(cats.map((c) => [c.id, c.name]));
+
+    const header = 'Date,Category,Amount,Note\n';
+    const rows = expenses
+      .map((e) => {
+        const date = new Date(e.date).toISOString().split('T')[0];
+        const cat = catMap[e.categoryId] || 'Unknown';
+        const amount = (e.amount / 100).toFixed(2);
+        const note = (e.note || '').replace(/"/g, '""');
+        return `${date},"${cat}",${amount},"${note}"`;
+      })
+      .join('\n');
+
+    const blob = new Blob([header + rows], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `spendbot-export-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleClearData = async () => {
+    const { db } = await import('../db');
+    await db.expenses.clear();
+    setShowClearConfirm(false);
+    await loadData();
   };
 
   if (isLoading) {
@@ -177,15 +219,15 @@ export default function Settings() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-8">
-      {/* Header */}
-      <motion.header 
+    <div className="min-h-screen bg-background" style={{ paddingBottom: 'calc(3rem + env(safe-area-inset-bottom, 0px))' }}>
+      {/* Header — left-aligned per spec */}
+      <motion.header
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         className="flex items-center p-4"
         style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
       >
-        <button 
+        <button
           onClick={() => navigate(-1)}
           className="w-10 h-10 flex items-center justify-center rounded-xl"
         >
@@ -194,226 +236,152 @@ export default function Settings() {
         <h1 className="text-xl font-semibold font-heading text-text-primary ml-3">Settings</h1>
       </motion.header>
 
-      <div className="px-4 py-4 space-y-6" style={{ paddingBottom: 'calc(3rem + env(safe-area-inset-bottom, 0px))' }}>
-        {/* Account Section */}
-        <section>
-          <div className="text-xs font-semibold uppercase tracking-[0.05em] text-text-muted px-0 mb-2">Account</div>
-          <div className="bg-surface-raised rounded-2xl overflow-hidden">
-            <button className="w-full flex items-center p-4 border-b border-surface-elevated active:bg-surface-elevated transition-colors">
-              <div className="w-8 h-8 flex items-center justify-center bg-surface rounded-lg text-base mr-3">📧</div>
-              <div className="flex-1 min-w-0 text-left">
-                <div className="text-base text-text-primary">Email</div>
-                <div className="text-sm text-text-secondary mt-0.5">user@example.com</div>
-              </div>
-              <span className="text-text-muted">›</span>
-            </button>
-            <button className="w-full flex items-center p-4 border-b border-surface-elevated active:bg-surface-elevated transition-colors">
-              <div className="w-8 h-8 flex items-center justify-center bg-surface rounded-lg text-base mr-3">🔐</div>
-              <div className="flex-1 min-w-0 text-left">
-                <div className="text-base text-text-primary">Password</div>
-              </div>
-              <span className="text-text-muted">›</span>
-            </button>
-            <button className="w-full flex items-center p-4 active:bg-surface-elevated transition-colors">
-              <div className="w-8 h-8 flex items-center justify-center bg-surface rounded-lg text-base mr-3">🚪</div>
-              <div className="flex-1 min-w-0 text-left">
-                <div className="text-base text-danger">Sign Out</div>
-              </div>
-              <span className="text-text-muted">›</span>
-            </button>
-          </div>
-        </section>
+      {/* ACCOUNT */}
+      <section className="mb-5">
+        <div className="text-xs font-semibold uppercase tracking-widest text-text-muted px-4 mb-2">
+          Account
+        </div>
+        <div className="bg-surface-raised mx-4 rounded-2xl overflow-hidden">
+          <SettingsRow icon="📧" label="Email" value="Local account" />
+          <SettingsRow icon="🔐" label="Password" onClick={() => {}} />
+          <SettingsRow icon="🚪" label="Sign Out" onClick={() => {}} />
+        </div>
+      </section>
 
-        {/* Budget Section */}
-        <section>
-          <div className="text-xs font-semibold uppercase tracking-[0.05em] text-text-muted px-0 mb-2">Budget</div>
-          <div className="bg-surface-raised rounded-2xl overflow-hidden">
-            <div className="flex items-center p-4">
-              <div className="w-8 h-8 flex items-center justify-center bg-surface rounded-lg text-base mr-3">💰</div>
-              <div className="flex-1 min-w-0">
-                <div className="text-base text-text-primary">Monthly Budget</div>
-                <div className="text-sm text-text-secondary mt-0.5">
-                  {settings?.monthlyBudget ? formatCurrency(settings.monthlyBudget) : 'Not set'}
-                </div>
+      {/* BUDGET */}
+      <section className="mb-5">
+        <div className="text-xs font-semibold uppercase tracking-widest text-text-muted px-4 mb-2">
+          Budget
+        </div>
+        <div className="bg-surface-raised mx-4 rounded-2xl overflow-hidden">
+          {showBudgetInput ? (
+            <div className="flex items-center p-4 gap-2">
+              <div className="w-8 h-8 flex items-center justify-center bg-surface rounded-lg text-base flex-shrink-0">
+                💰
               </div>
-              {showBudgetInput ? (
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    value={budget}
-                    onChange={(e) => setBudget(e.target.value)}
-                    placeholder="0"
-                    className="w-24 px-3 py-2 bg-background border border-border rounded-lg text-text-primary text-right focus:outline-none focus:border-accent"
-                    autoFocus
-                  />
-                  <button
-                    onClick={handleBudgetSave}
-                    className="p-2 bg-accent rounded-lg text-white"
-                  >
-                    <Check className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setShowBudgetInput(false)}
-                    className="p-2 bg-surface rounded-lg text-text-secondary"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowBudgetInput(true)}
-                  className="text-accent font-medium"
-                >
-                  {settings?.monthlyBudget ? 'Edit' : 'Set'}
+              <input
+                type="number"
+                value={budget}
+                onChange={(e) => setBudget(e.target.value)}
+                placeholder="0"
+                className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-text-primary text-right focus:outline-none focus:border-accent"
+                autoFocus
+              />
+              <button onClick={handleBudgetSave} className="p-2 bg-accent rounded-lg text-white">
+                <Check className="w-4 h-4" />
+              </button>
+              <button onClick={() => setShowBudgetInput(false)} className="p-2 bg-surface rounded-lg text-text-secondary">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <SettingsRow
+              icon="💰"
+              label="Monthly Budget"
+              value={settings?.monthlyBudget ? formatCurrency(settings.monthlyBudget) : 'Not set'}
+              onClick={() => setShowBudgetInput(true)}
+            />
+          )}
+          <SettingsRow icon="📅" label="Budget Start Day" value="1st of month" onClick={() => {}} />
+        </div>
+      </section>
+
+      {/* CATEGORIES */}
+      <section className="mb-5">
+        <div className="text-xs font-semibold uppercase tracking-widest text-text-muted px-4 mb-2">
+          Categories
+        </div>
+        <div className="bg-surface-raised mx-4 rounded-2xl overflow-hidden">
+          {categories.map((cat) => (
+            <div
+              key={cat.id}
+              className="flex items-center p-4 border-b border-surface-elevated last:border-b-0"
+            >
+              <div
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-base mr-3 flex-shrink-0"
+                style={{ backgroundColor: cat.color + '20' }}
+              >
+                {cat.emoji}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-base text-text-primary">{cat.name}</div>
+              </div>
+              {categorySpend[cat.id] && (
+                <span className="text-sm text-text-muted mr-2">
+                  {formatCurrency(categorySpend[cat.id])}
+                </span>
+              )}
+              <button onClick={() => startEditCategory(cat)} className="p-2 rounded-lg hover:bg-surface transition-colors">
+                <Pencil className="w-4 h-4 text-text-secondary" />
+              </button>
+              {!cat.isDefault && (
+                <button onClick={() => startDeleteCategory(cat)} className="p-2 rounded-lg hover:bg-danger/20 transition-colors">
+                  <Trash2 className="w-4 h-4 text-danger" />
                 </button>
               )}
             </div>
-          </div>
-        </section>
+          ))}
+          <SettingsRow icon="➕" label="Add Category" onClick={startAddCategory} />
+        </div>
+      </section>
 
-        {/* Categories Section */}
-        <section>
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-xs font-semibold uppercase tracking-[0.05em] text-text-muted">
-              Categories
+      {/* DATA */}
+      <section className="mb-5">
+        <div className="text-xs font-semibold uppercase tracking-widest text-text-muted px-4 mb-2">
+          Data
+        </div>
+        <div className="bg-surface-raised mx-4 rounded-2xl overflow-hidden">
+          <SettingsRow icon="📤" label="Export to CSV" onClick={handleExportCSV} />
+          <SettingsRow icon="🗑️" label="Clear All Data" destructive onClick={() => setShowClearConfirm(true)} />
+        </div>
+      </section>
+
+      {/* SUPPORT */}
+      <section className="mb-5">
+        <div className="text-xs font-semibold uppercase tracking-widest text-text-muted px-4 mb-2">
+          Support
+        </div>
+        <div className="bg-surface-raised mx-4 rounded-2xl overflow-hidden">
+          <SettingsRow icon="❓" label="Help & FAQ" onClick={() => {}} />
+          <SettingsRow icon="💬" label="Contact Support" onClick={() => window.open('mailto:support@loopspur.com')} />
+          <SettingsRow icon="⭐" label="Rate SpendBot" onClick={() => {}} />
+          {isInstalled ? (
+            <div className="flex items-center p-4 border-b border-surface-elevated last:border-b-0">
+              <div className="w-8 h-8 flex items-center justify-center bg-surface rounded-lg text-base mr-3">✅</div>
+              <div>
+                <div className="text-base text-success">App Installed</div>
+                <div className="text-sm text-text-secondary mt-0.5">You're using the full experience</div>
+              </div>
             </div>
-            <button
-              onClick={startAddCategory}
-              className="flex items-center gap-1 text-accent text-sm font-medium"
-            >
-              <Plus className="w-4 h-4" />
-              Add
-            </button>
-          </div>
-          
-          <div className="bg-surface-raised rounded-2xl overflow-hidden">
-            {categories.map((cat, index) => (
-              <motion.div
-                key={cat.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.03 }}
-                className={`flex items-center justify-between p-4 ${
-                  index < categories.length - 1 ? 'border-b border-border' : ''
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div 
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-xl"
-                    style={{ backgroundColor: cat.color + '20' }}
-                  >
-                    {cat.emoji}
-                  </div>
-                  <div>
-                    <div className="text-text-primary font-medium">{cat.name}</div>
-                    {cat.isDefault && (
-                      <div className="text-xs text-text-muted">Default</div>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  {categorySpends[cat.id] ? (
-                    <span className="text-sm text-text-muted mr-1">
-                      {formatCurrency(categorySpends[cat.id])}
-                    </span>
-                  ) : null}
-                  <button
-                    onClick={() => startEditCategory(cat)}
-                    className="p-2 rounded-lg hover:bg-surface transition-colors"
-                  >
-                    <Pencil className="w-4 h-4 text-text-secondary" />
-                  </button>
-                  {!cat.isDefault && (
-                    <button
-                      onClick={() => startDeleteCategory(cat)}
-                      className="p-2 rounded-lg hover:bg-danger/20 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4 text-danger" />
-                    </button>
-                  )}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </section>
+          ) : (
+            <SettingsRow icon="📲" label="Install App" value="Get the full app experience" onClick={() => {}} />
+          )}
+        </div>
+      </section>
 
-        {/* Data Section */}
-        <section>
-          <div className="text-xs font-semibold uppercase tracking-[0.05em] text-text-muted px-0 mb-2">Data</div>
-          <div className="bg-surface-raised rounded-2xl overflow-hidden">
-            <button className="w-full flex items-center p-4 border-b border-surface-elevated active:bg-surface-elevated transition-colors">
-              <div className="w-8 h-8 flex items-center justify-center bg-surface rounded-lg text-base mr-3">📤</div>
-              <div className="flex-1 min-w-0 text-left">
-                <div className="text-base text-text-primary">Export to CSV</div>
-              </div>
-              <span className="text-text-muted">›</span>
-            </button>
-            <button className="w-full flex items-center p-4 active:bg-surface-elevated transition-colors">
-              <div className="w-8 h-8 flex items-center justify-center bg-surface rounded-lg text-base mr-3">🗑️</div>
-              <div className="flex-1 min-w-0 text-left">
-                <div className="text-base text-danger">Clear All Data</div>
-              </div>
-              <span className="text-text-muted">›</span>
-            </button>
-          </div>
-        </section>
+      {/* Premium CTA */}
+      {!settings?.isPremium && (
+        <motion.button
+          whileTap={{ scale: 0.98 }}
+          className="mx-4 w-[calc(100%-2rem)] p-4 rounded-2xl text-center mb-6"
+          style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)' }}
+          onClick={() => {}}
+        >
+          <span className="text-base font-semibold text-white">✨ Upgrade to Premium</span>
+        </motion.button>
+      )}
 
-        {/* Support Section */}
-        <section>
-          <div className="text-xs font-semibold uppercase tracking-[0.05em] text-text-muted px-0 mb-2">Support</div>
-          <div className="bg-surface-raised rounded-2xl overflow-hidden">
-            <button className="w-full flex items-center p-4 border-b border-surface-elevated active:bg-surface-elevated transition-colors">
-              <div className="w-8 h-8 flex items-center justify-center bg-surface rounded-lg text-base mr-3">❓</div>
-              <div className="flex-1 min-w-0 text-left">
-                <div className="text-base text-text-primary">Help & FAQ</div>
-              </div>
-              <span className="text-text-muted">›</span>
-            </button>
-            <button className="w-full flex items-center p-4 border-b border-surface-elevated active:bg-surface-elevated transition-colors">
-              <div className="w-8 h-8 flex items-center justify-center bg-surface rounded-lg text-base mr-3">💬</div>
-              <div className="flex-1 min-w-0 text-left">
-                <div className="text-base text-text-primary">Contact Support</div>
-              </div>
-              <span className="text-text-muted">›</span>
-            </button>
-            <button className="w-full flex items-center p-4 active:bg-surface-elevated transition-colors">
-              <div className="w-8 h-8 flex items-center justify-center bg-surface rounded-lg text-base mr-3">⭐</div>
-              <div className="flex-1 min-w-0 text-left">
-                <div className="text-base text-text-primary">Rate SpendBot</div>
-              </div>
-              <span className="text-text-muted">›</span>
-            </button>
-          </div>
-        </section>
-
-        {/* Premium CTA (for free users) */}
-        {!settings?.isPremium && (
-          <motion.button
-            whileTap={{ scale: 0.98 }}
-            className="w-full p-4 rounded-2xl text-center"
-            style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)' }}
-          >
-            <div className="text-base font-semibold text-white">✨ Upgrade to Premium</div>
-          </motion.button>
-        )}
-
-        {/* Footer */}
-        <section className="text-center py-6">
-          <div className="flex items-center justify-center gap-2 text-text-secondary mb-3">
-            <span>🤖</span>
-            <span className="text-sm">SpendBot v1.1.0</span>
-          </div>
-          <div className="text-xs text-text-muted mb-3">Made by Loopspur</div>
-          <div className="flex justify-center gap-4">
-            <button className="text-sm text-text-muted">Privacy</button>
-            <span className="text-text-muted">•</span>
-            <button className="text-sm text-text-muted">Terms</button>
-            <span className="text-text-muted">•</span>
-            <button className="text-sm text-text-muted">Licenses</button>
-          </div>
-        </section>
-      </div>
+      {/* Footer */}
+      <footer className="text-center px-4 py-6">
+        <div className="flex items-center justify-center gap-2 text-text-secondary text-sm mb-3">
+          🤖 SpendBot v1.1.0 • Made by Loopspur
+        </div>
+        <div className="flex justify-center gap-4">
+          <a href="#" className="text-sm text-text-muted">Privacy</a>
+          <a href="#" className="text-sm text-text-muted">Terms</a>
+          <a href="#" className="text-sm text-text-muted">Licenses</a>
+        </div>
+      </footer>
 
       {/* Category Edit Modal */}
       <AnimatePresence>
@@ -430,16 +398,15 @@ export default function Settings() {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              onClick={e => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
               className="bg-surface rounded-t-3xl p-6 w-full max-w-lg"
             >
               <h2 className="text-xl font-bold font-heading text-text-primary mb-6">
                 {editingCategory.id ? 'Edit Category' : 'New Category'}
               </h2>
-              
-              {/* Preview */}
+
               <div className="flex items-center gap-3 mb-6 p-4 bg-background rounded-xl">
-                <div 
+                <div
                   className="w-12 h-12 rounded-full flex items-center justify-center text-2xl"
                   style={{ backgroundColor: editingCategory.color + '20' }}
                 >
@@ -450,7 +417,6 @@ export default function Settings() {
                 </div>
               </div>
 
-              {/* Name Input */}
               <div className="mb-4">
                 <label className="block text-sm text-text-secondary mb-2">Name</label>
                 <input
@@ -463,7 +429,6 @@ export default function Settings() {
                 />
               </div>
 
-              {/* Emoji Picker */}
               <div className="mb-4">
                 <label className="block text-sm text-text-secondary mb-2">Emoji</label>
                 <button
@@ -480,7 +445,7 @@ export default function Settings() {
                       exit={{ opacity: 0, height: 0 }}
                       className="mt-2 grid grid-cols-10 gap-2 p-3 bg-background rounded-xl"
                     >
-                      {EMOJI_OPTIONS.map(emoji => (
+                      {EMOJI_OPTIONS.map((emoji) => (
                         <button
                           key={emoji}
                           onClick={() => {
@@ -499,17 +464,13 @@ export default function Settings() {
                 </AnimatePresence>
               </div>
 
-              {/* Color Picker */}
               <div className="mb-6">
                 <label className="block text-sm text-text-secondary mb-2">Color</label>
                 <button
                   onClick={() => setShowColorPicker(!showColorPicker)}
                   className="w-full px-4 py-3 bg-background border border-border rounded-xl flex items-center gap-3"
                 >
-                  <div 
-                    className="w-6 h-6 rounded-full"
-                    style={{ backgroundColor: editingCategory.color }}
-                  />
+                  <div className="w-6 h-6 rounded-full" style={{ backgroundColor: editingCategory.color }} />
                   <span className="text-text-secondary">{editingCategory.color}</span>
                 </button>
                 <AnimatePresence>
@@ -520,7 +481,7 @@ export default function Settings() {
                       exit={{ opacity: 0, height: 0 }}
                       className="mt-2 grid grid-cols-6 gap-2 p-3 bg-background rounded-xl"
                     >
-                      {COLOR_OPTIONS.map(color => (
+                      {COLOR_OPTIONS.map((color) => (
                         <button
                           key={color}
                           onClick={() => {
@@ -538,18 +499,17 @@ export default function Settings() {
                 </AnimatePresence>
               </div>
 
-              {/* Actions */}
               <div className="flex gap-3">
                 <button
                   onClick={cancelEditing}
-                  className="flex-1 h-12 bg-background text-text-secondary rounded-xl font-medium hover:bg-surface-raised transition-colors"
+                  className="flex-1 h-12 bg-background text-text-secondary rounded-xl font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={saveCategory}
                   disabled={!editingCategory.name.trim()}
-                  className="flex-1 h-12 bg-accent text-white rounded-xl font-medium hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 h-12 bg-accent text-white rounded-xl font-medium disabled:opacity-50"
                 >
                   {editingCategory.id ? 'Save Changes' : 'Add Category'}
                 </button>
@@ -567,31 +527,32 @@ export default function Settings() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/80 flex items-center justify-center p-6 z-50"
-            onClick={cancelDelete}
+            onClick={() => { setDeletingCategory(null); setDeleteExpenseCount(0); setReassignTarget(''); }}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              onClick={e => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
               className="bg-surface rounded-3xl p-6 max-w-sm w-full"
             >
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 rounded-full bg-danger/20 flex items-center justify-center">
                   <AlertTriangle className="w-6 h-6 text-danger" />
                 </div>
-                <div>
-                  <h2 className="text-lg font-bold font-heading text-text-primary">
-                    Delete "{deletingCategory.name}"?
-                  </h2>
-                </div>
+                <h2 className="text-lg font-bold font-heading text-text-primary">
+                  Delete "{deletingCategory.name}"?
+                </h2>
               </div>
 
               {deleteExpenseCount > 0 ? (
                 <div className="mb-6">
                   <p className="text-text-secondary mb-4">
-                    This category has <span className="font-semibold text-text-primary">{deleteExpenseCount} expense{deleteExpenseCount !== 1 ? 's' : ''}</span>. 
-                    Choose a category to reassign them to:
+                    This category has{' '}
+                    <span className="font-semibold text-text-primary">
+                      {deleteExpenseCount} expense{deleteExpenseCount !== 1 ? 's' : ''}
+                    </span>
+                    . Choose a category to reassign them to:
                   </p>
                   <select
                     value={reassignTarget}
@@ -599,13 +560,12 @@ export default function Settings() {
                     className="w-full px-4 py-3 bg-background border border-border rounded-xl text-text-primary focus:outline-none focus:border-accent"
                   >
                     {categories
-                      .filter(c => c.id !== deletingCategory.id)
-                      .map(cat => (
+                      .filter((c) => c.id !== deletingCategory.id)
+                      .map((cat) => (
                         <option key={cat.id} value={cat.id}>
                           {cat.emoji} {cat.name}
                         </option>
-                      ))
-                    }
+                      ))}
                   </select>
                 </div>
               ) : (
@@ -616,16 +576,55 @@ export default function Settings() {
 
               <div className="flex gap-3">
                 <button
-                  onClick={cancelDelete}
-                  className="flex-1 h-12 bg-background text-text-secondary rounded-xl font-medium hover:bg-surface-raised transition-colors"
+                  onClick={() => { setDeletingCategory(null); setDeleteExpenseCount(0); setReassignTarget(''); }}
+                  className="flex-1 h-12 bg-background text-text-secondary rounded-xl font-medium"
                 >
                   Cancel
                 </button>
-                <button
-                  onClick={confirmDelete}
-                  className="flex-1 h-12 bg-danger text-white rounded-xl font-medium hover:bg-danger/90 transition-colors"
-                >
+                <button onClick={confirmDelete} className="flex-1 h-12 bg-danger text-white rounded-xl font-medium">
                   Delete
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Clear Data Confirmation */}
+      <AnimatePresence>
+        {showClearConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 flex items-center justify-center p-6 z-50"
+            onClick={() => setShowClearConfirm(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-surface rounded-3xl p-6 max-w-sm w-full"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-danger/20 flex items-center justify-center">
+                  <AlertTriangle className="w-6 h-6 text-danger" />
+                </div>
+                <h2 className="text-lg font-bold font-heading text-text-primary">Clear All Data?</h2>
+              </div>
+              <p className="text-text-secondary mb-6">
+                This will permanently delete all your expenses. Categories and settings will remain. This cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowClearConfirm(false)}
+                  className="flex-1 h-12 bg-background text-text-secondary rounded-xl font-medium"
+                >
+                  Cancel
+                </button>
+                <button onClick={handleClearData} className="flex-1 h-12 bg-danger text-white rounded-xl font-medium">
+                  Clear Data
                 </button>
               </div>
             </motion.div>

@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Delete, Check } from 'lucide-react';
+import { ArrowLeft, Delete } from 'lucide-react';
 import { addExpense, getCategories, Category, getMonthlyExpenseCount, getSettings } from '../db';
 import SuccessAnimation from '../components/SuccessAnimation';
+import PaywallModal from '../components/PaywallModal';
+import PaywallModal from '../components/PaywallModal';
 
 const FREE_LIMIT = 50;
 
@@ -190,59 +192,10 @@ export default function AddExpense() {
       {/* Paywall Modal */}
       <AnimatePresence>
         {showPaywall && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 flex items-center justify-center p-6 z-50"
-            onClick={() => setShowPaywall(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={e => e.stopPropagation()}
-              className="bg-surface rounded-3xl p-8 max-w-sm w-full text-center"
-            >
-              <div className="text-6xl mb-4">🤖</div>
-              <h2 className="text-2xl font-bold font-heading text-text-primary mb-2">
-                You've tracked {FREE_LIMIT} expenses this month!
-              </h2>
-              <p className="text-text-secondary mb-6">
-                That's more than 94% of users. You're clearly serious about your finances.
-              </p>
-              
-              <div className="bg-surface-raised rounded-2xl p-6 mb-6">
-                <h3 className="font-semibold text-text-primary mb-4">Unlock SpendBot Premium</h3>
-                <ul className="text-left text-text-secondary space-y-2 mb-4">
-                  <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success" /> Unlimited expenses
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success" /> Custom categories
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success" /> Budget alerts
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-success" /> All future features
-                  </li>
-                </ul>
-                <p className="text-2xl font-bold text-text-primary">$4.99 once. Forever.</p>
-              </div>
-
-              <button className="w-full h-14 bg-accent text-white rounded-2xl font-semibold hover:bg-accent-hover transition-colors mb-3">
-                Upgrade Now
-              </button>
-              <button 
-                onClick={() => setShowPaywall(false)}
-                className="text-text-muted hover:text-text-secondary transition-colors"
-              >
-                Maybe later
-              </button>
-              <p className="text-text-muted text-sm mt-4">No subscription. Ever.</p>
-            </motion.div>
-          </motion.div>
+          <PaywallModal
+            onDismiss={() => setShowPaywall(false)}
+            expenseCount={expenseCount}
+          />
         )}
       </AnimatePresence>
     </div>
