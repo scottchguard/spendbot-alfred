@@ -83,6 +83,7 @@ export default function AddExpense() {
         >
           <ArrowLeft className="w-6 h-6 text-text-secondary" />
         </button>
+        <h1 className="text-lg font-semibold font-heading text-text-primary">Add Expense</h1>
         <button 
           onClick={() => navigate('/')}
           className="text-text-secondary hover:text-text-primary transition-colors px-4 py-2"
@@ -102,10 +103,14 @@ export default function AddExpense() {
           initial={{ scale: 1.1 }}
           animate={{ scale: 1 }}
           transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-          className="text-5xl md:text-7xl font-bold font-display text-text-primary mb-8"
+          className="flex items-baseline justify-center mb-2"
         >
-          {displayAmount}
+          <span className="text-[2rem] font-medium text-text-secondary mr-2 font-display">$</span>
+          <span className="text-[3.5rem] font-bold font-display text-text-primary tracking-wide" style={{ fontVariantNumeric: 'tabular-nums' }}>
+            {amount ? (parseInt(amount) / 100).toFixed(2) : '0.00'}
+          </span>
         </motion.div>
+        <div className="w-[200px] h-[2px] bg-surface-elevated rounded-full mx-auto mb-8" />
 
         {/* Category Selector */}
         <div className="w-full max-w-md mb-8">
@@ -145,25 +150,18 @@ export default function AddExpense() {
         transition={{ delay: 0.1 }}
         className="p-4 pb-8"
       >
-        <div className="grid grid-cols-3 gap-3 max-w-sm mx-auto mb-4">
-          {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0'].map((num) => (
+        <div className="grid grid-cols-3 gap-2 max-w-sm mx-auto mb-4">
+          {['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0', 'delete'].map((btn) => (
             <motion.button
-              key={num}
-              whileTap={{ scale: 0.95, backgroundColor: 'rgba(99, 102, 241, 0.2)' }}
-              onClick={() => num !== '.' && handleNumberPress(num)}
-              disabled={num === '.'}
-              className="h-16 rounded-2xl bg-surface text-text-primary text-2xl font-semibold hover:bg-surface-raised transition-colors disabled:opacity-30"
+              key={btn}
+              whileTap={{ scale: 0.97, backgroundColor: 'rgba(99, 102, 241, 0.2)' }}
+              onClick={() => btn === 'delete' ? handleDelete() : handleNumberPress(btn)}
+              className="h-[72px] rounded-2xl bg-surface text-text-primary text-[1.75rem] font-medium hover:bg-surface-raised transition-colors flex items-center justify-center"
+              style={{ WebkitTapHighlightColor: 'transparent' }}
             >
-              {num}
+              {btn === 'delete' ? <Delete className="w-6 h-6 text-text-secondary" /> : btn}
             </motion.button>
           ))}
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={handleDelete}
-            className="h-16 rounded-2xl bg-surface text-text-secondary hover:bg-surface-raised transition-colors flex items-center justify-center"
-          >
-            <Delete className="w-6 h-6" />
-          </motion.button>
         </div>
 
         {/* Save Button */}
@@ -173,16 +171,19 @@ export default function AddExpense() {
           disabled={!isValid}
           className={`w-full max-w-sm mx-auto h-14 rounded-2xl font-semibold text-lg flex items-center justify-center gap-2 transition-all ${
             isValid 
-              ? 'bg-accent text-white hover:bg-accent-hover shadow-lg shadow-accent/30' 
+              ? 'text-white' 
               : 'bg-surface text-text-muted cursor-not-allowed'
           }`}
+          style={isValid ? {
+            background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
+            boxShadow: '0 4px 20px rgba(99, 102, 241, 0.3)',
+          } : {}}
           animate={isValid ? { 
             boxShadow: ['0 10px 30px -10px rgba(99, 102, 241, 0.3)', '0 10px 30px -10px rgba(99, 102, 241, 0.6)', '0 10px 30px -10px rgba(99, 102, 241, 0.3)']
           } : {}}
           transition={{ duration: 2, repeat: Infinity }}
         >
-          <Check className="w-5 h-5" />
-          Save Expense
+          ✓ Save Expense
         </motion.button>
       </motion.div>
 
