@@ -154,6 +154,39 @@ export async function getExpensesByCategory(year: number, month: number): Promis
   return byCategory;
 }
 
+export async function getTodayStats(): Promise<{ total: number; count: number }> {
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+  const expenses = await db.expenses
+    .where('date')
+    .between(startOfDay, endOfDay)
+    .toArray();
+
+  return {
+    total: expenses.reduce((sum, exp) => sum + exp.amount, 0),
+    count: expenses.length,
+  };
+}
+
+export async function getWeekStats(): Promise<{ total: number; count: number }> {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek);
+  const endOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+  const expenses = await db.expenses
+    .where('date')
+    .between(startOfWeek, endOfWeek)
+    .toArray();
+
+  return {
+    total: expenses.reduce((sum, exp) => sum + exp.amount, 0),
+    count: expenses.length,
+  };
+}
+
 export async function getRecentExpenses(limit: number = 5): Promise<Expense[]> {
   return await db.expenses
     .orderBy('date')
