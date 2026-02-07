@@ -80,8 +80,10 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center">
         <div className="text-4xl animate-bounce">🤖</div>
+        <p className="text-sm text-text-secondary mt-3">Waking up the robot...</p>
+        <div className="loading-bar" />
       </div>
     );
   }
@@ -137,22 +139,41 @@ export default function Dashboard() {
         transition={{ delay: 0.1 }}
         className="text-center py-8 px-4"
       >
-        <motion.div
-          className="text-[4rem] font-extrabold leading-none mb-4 font-display"
-          style={{
-            background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            letterSpacing: '-0.03em',
-          }}
-          key={monthlyTotal}
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-        >
-          <AnimatedNumber value={monthlyTotal / 100} prefix="$" />
-        </motion.div>
+        <div className="relative inline-block">
+          {/* Glow effect behind amount */}
+          <div
+            className="absolute inset-0 text-[4rem] font-extrabold leading-none font-display pointer-events-none select-none"
+            style={{
+              background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              letterSpacing: '-0.03em',
+              filter: 'blur(40px)',
+              opacity: 0.4,
+              zIndex: 0,
+            }}
+            aria-hidden="true"
+          >
+            <AnimatedNumber value={monthlyTotal / 100} prefix="$" />
+          </div>
+          <motion.div
+            className="text-[4rem] font-extrabold leading-none mb-4 font-display relative z-10"
+            style={{
+              background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              letterSpacing: '-0.03em',
+            }}
+            key={monthlyTotal}
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+          >
+            <AnimatedNumber value={monthlyTotal / 100} prefix="$" />
+          </motion.div>
+        </div>
 
         {/* Budget Progress */}
         {budgetProgress !== null && settings?.monthlyBudget && (
@@ -290,7 +311,7 @@ export default function Dashboard() {
         transition={{ delay: 0.5, type: 'spring', stiffness: 400, damping: 25 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => navigate('/add')}
-        className="fixed left-1/2 -translate-x-1/2 w-16 h-16 rounded-full flex items-center justify-center text-white text-3xl z-50"
+        className={`fixed left-1/2 -translate-x-1/2 w-16 h-16 rounded-full flex items-center justify-center text-white text-3xl z-50 ${recentExpenses.length === 0 ? 'fab-pulse' : ''}`}
         style={{
           bottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))',
           background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
