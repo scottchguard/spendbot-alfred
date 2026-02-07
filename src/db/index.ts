@@ -33,16 +33,17 @@ export interface UserSettings {
 
 // Default categories
 export const DEFAULT_CATEGORIES: Category[] = [
-  { id: 'food', name: 'Food', emoji: '🍔', color: '#F97316', isDefault: true, sortOrder: 0 },
-  { id: 'transport', name: 'Transport', emoji: '🚗', color: '#3B82F6', isDefault: true, sortOrder: 1 },
-  { id: 'groceries', name: 'Groceries', emoji: '🛒', color: '#22C55E', isDefault: true, sortOrder: 2 },
-  { id: 'entertainment', name: 'Entertainment', emoji: '🎬', color: '#A855F7', isDefault: true, sortOrder: 3 },
-  { id: 'bills', name: 'Bills', emoji: '🏠', color: '#6B7280', isDefault: true, sortOrder: 4 },
-  { id: 'shopping', name: 'Shopping', emoji: '🛍️', color: '#EC4899', isDefault: true, sortOrder: 5 },
-  { id: 'health', name: 'Health', emoji: '💊', color: '#EF4444', isDefault: true, sortOrder: 6 },
-  { id: 'travel', name: 'Travel', emoji: '✈️', color: '#06B6D4', isDefault: true, sortOrder: 7 },
-  { id: 'subscriptions', name: 'Subscriptions', emoji: '📱', color: '#6366F1', isDefault: true, sortOrder: 8 },
-  { id: 'other', name: 'Other', emoji: '📦', color: '#64748B', isDefault: true, sortOrder: 9 },
+  { id: 'food', name: 'Food', emoji: '🍔', color: '#FB923C', isDefault: true, sortOrder: 0 },
+  { id: 'transport', name: 'Transport', emoji: '🚗', color: '#60A5FA', isDefault: true, sortOrder: 1 },
+  { id: 'groceries', name: 'Groceries', emoji: '🛒', color: '#34D399', isDefault: true, sortOrder: 2 },
+  { id: 'entertainment', name: 'Entertainment', emoji: '🎬', color: '#C084FC', isDefault: true, sortOrder: 3 },
+  { id: 'bills', name: 'Bills', emoji: '🏠', color: '#94A3B8', isDefault: true, sortOrder: 4 },
+  { id: 'shopping', name: 'Shopping', emoji: '🛍️', color: '#F472B6', isDefault: true, sortOrder: 5 },
+  { id: 'health', name: 'Health', emoji: '💊', color: '#F87171', isDefault: true, sortOrder: 6 },
+  { id: 'travel', name: 'Travel', emoji: '✈️', color: '#22D3EE', isDefault: true, sortOrder: 7 },
+  { id: 'subscriptions', name: 'Subscriptions', emoji: '📱', color: '#A78BFA', isDefault: true, sortOrder: 8 },
+  { id: 'coffee', name: 'Coffee', emoji: '☕', color: '#FBBF24', isDefault: true, sortOrder: 9 },
+  { id: 'other', name: 'Other', emoji: '📦', color: '#9CA3AF', isDefault: true, sortOrder: 10 },
 ];
 
 class SpendBotDB extends Dexie {
@@ -251,6 +252,29 @@ export async function getCategoryExpenseCount(categoryId: string): Promise<numbe
     .where('categoryId')
     .equals(categoryId)
     .count();
+}
+
+export async function getStreak(): Promise<number> {
+  const now = new Date();
+  let streak = 0;
+  let checkDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  while (true) {
+    const startOfDay = new Date(checkDate);
+    const endOfDay = new Date(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate(), 23, 59, 59);
+    const count = await db.expenses
+      .where('date')
+      .between(startOfDay, endOfDay)
+      .count();
+
+    if (count > 0) {
+      streak++;
+      checkDate.setDate(checkDate.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  return streak;
 }
 
 export async function reassignExpenses(fromCategoryId: string, toCategoryId: string): Promise<void> {

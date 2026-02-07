@@ -20,7 +20,7 @@ import {
 const EMOJI_OPTIONS = ['🍔', '🚗', '🛒', '🎬', '🏠', '🛍️', '💊', '✈️', '📱', '📦', '💰', '🎮', '☕', '🍕', '🏋️', '🎵', '📚', '🐕', '💇', '🔧'];
 
 // Common color options
-const COLOR_OPTIONS = ['#F97316', '#3B82F6', '#22C55E', '#A855F7', '#6B7280', '#EC4899', '#EF4444', '#06B6D4', '#6366F1', '#64748B', '#FBBF24', '#10B981'];
+const COLOR_OPTIONS = ['#FB923C', '#60A5FA', '#34D399', '#C084FC', '#94A3B8', '#F472B6', '#F87171', '#22D3EE', '#A78BFA', '#9CA3AF', '#FBBF24', '#10B981'];
 
 interface EditingCategory {
   id: string | null;
